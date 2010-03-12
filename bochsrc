@@ -9,8 +9,8 @@ megs: 32
 #gdbstub: enabled=1, port=1234, text_base=0, data_base=0, bss_base=0
 
 # filename of ROM images
-romimage: file=/usr/local/share/bochs/BIOS-bochs-latest
-vgaromimage: file=/usr/local/share/bochs/VGABIOS-lgpl-latest
+romimage: file=/usr/lib/bochs/bios/BIOS-bochs-latest
+vgaromimage: file=/usr/lib/bochs/bios/VGABIOS-lgpl-latest
 
 # what disk images will be used 
 floppya: 1_44=./thunix.img, status=inserted
@@ -43,7 +43,7 @@ mouse: enabled=0
 # in the DLX Linux example I'm enabling keyboard_mapping so that paste 
 # will work.  Cut&Paste is currently implemented on win32 and X windows only.
 
-keyboard_mapping: enabled=1, map=/usr/local/share/bochs/keymaps/x11-pc-us.map
+#keyboard_mapping: enabled=1, map=/usr/local/share/bochs/keymaps/x11-pc-us.map
 #keyboard_mapping: enabled=1, map=$BXSHARE/keymaps/x11-pc-fr.map
 #keyboard_mapping: enabled=1, map=$BXSHARE/keymaps/x11-pc-de.map
 #keyboard_mapping: enabled=1, map=$BXSHARE/keymaps/x11-pc-es.map

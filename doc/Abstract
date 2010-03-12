@@ -1,0 +1,10 @@
+This paper describes how to wirte a mini kernel from scratch, which has
+the basic featuers that a kernel should have. And they are: protect mode
+enabled, so that we can use all the 4G physical memory and it also can
+make the kernel much stronger with it's ring protect tech. It contains
+basic drivers, such as keyboard driver so that we can input data, floppy
+driver so that we can write and read from a floppy, timer driver so that
+we have our own soft timer， and so on. And of course, it contains a
+fs driver. I chose EXT2 fs here, since it has been the native linux fs
+for a long time, and it's simple to implement. And that's all I would
+talk about, in a low-level way, in this paper.
