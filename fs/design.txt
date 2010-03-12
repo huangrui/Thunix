@@ -1,0 +1,388 @@
+.This is the design document of the Implention of EXT2 filesystem.
+
+here is the DISK DATA STRUCTURE of EXT2:
+
+        |<-------------------Block  Group 0------------------------>|
++-------+-------+-------------+------------+---------------+--------+---...---+-----------------+
+| Boot  | super |   Group     | Data block | inode | inode |  Data  |         |	     block	|
+| Block | Block | Descriptors |  bitmap    | bitmap| Table | blocks |         |	    group n	|
++-------+-------+-------------+------------+-------+-------+--------+---...---+-----------------+
+1 block  1 block   n blocks      1 block    1 block n blcoks n blocks
+
+Ok,that's a nice structure. here are some more detials:
+1. I'm going to use a 1.44M floppy.
+2. So, the block size should be 1024B, that's two sector's size,means 1block = 2sector
+3. As the EXT2 does, we leave the boot block along, doing nothing to her.It just reversed and takes
+   two sectors size.
+4. We have ONE super block, ONE group descriptor which means it only takes ONE block size.
+5. We have set the block size to be 1024B,so one block group can hold 1024 * 8 = 8096 blocks, and 
+   that's quite enough to our 1.44M floppy which totally has 1440 blocks.
+6. We use 23 blocks to store the inode disk structure, so there are 23*8=184 inodes per block group.
+
+I hope that's enough.
+
+here is the structure of each important sturct used by EXT2:
+
+super block structure:
+/* include/linux/ext2_fs.h */
+struct ext2_super_block 
+{
+    __u32 s_inodes_count;	/* Inodes count */
+    __u32 s_blocks_count;	/* Blocks count */
+    __u32 s_r_blocks_count;	/* Reserved blocks count */
+    __u32 s_free_blocks_count;	/* Free blocks count */
+    __u32 s_free_inodes_count;	/* Free inodes count */
+    __u32 s_first_data_block;	/* First Data Block */
+    __u32 s_log_block_size;	/* Block size */
+    __s32 s_log_frag_size;	/* Fragment size */
+    __u32 s_blocks_per_group;	/* # Blocks per group */
+    __u32 s_frags_per_group;	/* # Fragments per group */
+    __u32 s_inodes_per_group;	/* # Inodes per group */
+    __u32 s_mtime;		/* Mount time */
+    __u32 s_wtime;		/* Write time */
+    __u16 s_mnt_count;		/* Mount count */
+    __s16 s_max_mnt_count;	/* Maximal mount count */
+    __u16 s_magic;		/* Magic signature */
+    __u16 s_state;		/* File system state */
+    __u16 s_errors;		/* Behaviour when detecting errors */
+    __u16 s_pad;
+    __u32 s_lastcheck;		/* time of last check */
+    __u32 s_checkinterval;	/* max. time between checks */
+    __u32 s_creator_os;		/* OS */
+    __u32 s_rev_level;		/* Revision level */
+    __u16 s_def_resuid;		/* Default uid for reserved blocks */
+    __u16 s_def_resgid;		/* Default gid for reserved blocks */
+    __u32 s_reserved[235];	/* Padding to the end of the block */
+};
+and typically, there are only serveral fileds of interest.
+    s_inodes_count   	     records the total inode number the filesystem have, here is 184
+    s_blocks_count   	     records the total block number the filesystem have, here is 1440.
+    s_r_blocks count 	     records the reserved blocks, usually be 5% of the filestem size. 
+    	       		     here is  72.
+    s_free_blocks_count	     records the free number of free blocks, here is 1393
+    s_free_inodes_count	     records the free number of free inodes, here is 173.
+    s_first_data_block	     records the start block number of block group one, here is 1.
+    s_log_block_size	     block size = 1 << (10 + s_log_blocks_size), so here is ZERO.
+    s_log_frag_size	     similar to s_log_block_size, we don's use it.
+    s_blocks_per_group	     records the block number per group, here is 8092.
+    S_inodes_per_group	     records the block number per group, here is 184.
+    s_magic		     a macro that indicate it IS an EXT2 filesystem, it's 0XEE53
+    
+
+
+
+ext2 group desc structure:
+struct ext2_group_desc
+{
+    __u32 bg_block_bitmap;	/* Blocks bitmap block */
+    __u32 bg_inode_bitmap;	/* Inodes bitmap block */
+    __u32 bg_inode_table;	/* Inodes table block */
+    __u16 bg_free_blocks_count;	/* Free blocks count */
+    __u16 bg_free_inodes_count;	/* Free inodes count */
+    __u16 bg_used_dirs_count;	/* Directories count */
+    __u16 bg_pad;
+    __u32 bg_reserved[3];
+};
+
+As you can see, it's simply, just recode the state of the group, such as in which block the 
+blocks/inodes bitmap stores, in which block the indoes table stores, and how many free blocks/inodes
+the group have now. And the bg_used_dirs_count keep the record of directories count in this group
+to keep the blance of each group.
+
+
+
+ext2 inode structure:
+struct ext2_inode
+{
+    __u16 i_mode;		/* File mode */
+    __u16 i_uid;		/* Owner Uid */
+    __u32 i_size;		/* 4: Size in bytes */
+    __u32 i_atime;		/* Access time */
+    __u32 i_ctime;		/* 12: Creation time */
+    __u32 i_mtime;		/* Modification time */
+    __u32 i_dtime;		/* 20: Deletion Time */
+    __u16 i_gid;		/* Group Id */
+    __u16 i_links_count;	/* 24: Links count */
+    __u32 i_blocks;		/* Blocks count */
+    __u32 i_flags;		/* 32: File flags */
+    union
+      {
+	struct
+	  {
+	    __u32 l_i_reserved1;
+	  }
+	linux1;
+	struct
+	  {
+	    __u32 h_i_translator;
+	  }
+	hurd1;
+	struct
+	  {
+	    __u32 m_i_reserved1;
+	  }
+	masix1;
+      }
+    osd1;			/* OS dependent 1 */
+    __u32 i_block[EXT2_N_BLOCKS];	/* 40: Pointers to blocks */
+    __u32 i_version;		/* File version (for NFS) */
+    __u32 i_file_acl;		/* File ACL */
+    __u32 i_dir_acl;		/* Directory ACL */
+    __u32 i_faddr;		/* Fragment address */
+    union
+      {
+	struct
+	  {
+	    __u8 l_i_frag;	/* Fragment number */
+	    __u8 l_i_fsize;	/* Fragment size */
+	    __u16 i_pad1;
+	    __u32 l_i_reserved2[2];
+	  }
+	linux2;
+	struct
+	  {
+	    __u8 h_i_frag;	/* Fragment number */
+	    __u8 h_i_fsize;	/* Fragment size */
+	    __u16 h_i_mode_high;
+	    __u16 h_i_uid_high;
+	    __u16 h_i_gid_high;
+	    __u32 h_i_author;
+	  }
+	hurd2;
+	struct
+	  {
+	    __u8 m_i_frag;	/* Fragment number */
+	    __u8 m_i_fsize;	/* Fragment size */
+	    __u16 m_pad1;
+	    __u32 m_i_reserved2[2];
+	  }
+	masix2;
+      }
+    osd2;			/* OS dependent 2 */
+};
+
+Yeah, that looks really quite large, but just only several fileds we should note it.
+      i_size	 recods the file size in bytes.
+      i_block	 recods the data block not the filesyste block the file has taken up.      
+      i_blocks[] that's really IMPORTANT.it stors the block address where the file stores.
+
+
+
+
+Then, we should decipt some low level functions that's the need to implement the EXT2 fs.
+
+
+balloc.c
+	contains the blocks allocation and deallocation routines
+	And others things relations to block.
+	
+	The free blocks are managed by bitmaps. A file system contains serveral
+ 	blocks groups. Each group contains 1 bitmap block for blocks, 1 bitmap
+	block for inodes, N blocks for the inode table and the rest for data blocks.
+
+	The file system contains group descriptors which are located after the
+	super block. Each descriptor contains the number of the bitmap block and
+	the free blocks count in the block. The descriptors are loadded in memory
+ 	when a file system is mounted (see ext2_read_super or may be ext2_fill_super i think).
+
+
+
+struct ext2_group_desc * ext2_get_group_desc (struct super *sb,
+       		       	 		      unsinged int block_group,
+					      struct buffer_head ** bh);
+        This function returns the group descriptor memeory address.
+	
+	With the block_group parameter, we can get the group number where the block block_group
+	in by the fllowing fomura:
+	   group_desc_number = block_group >> EXT2_DESC_PER_BLOCK_BITS(sb);
+	   #define EXT2_DESC_PER_BLOCK_BITS(s) (EXT2_SB(s)->s_desc_per_lock_bits)
+
+       As you can see from the figure above, we use n blocks block to hold the struct 
+       group_desc, and there can be n (n usually be 8 = 1024/128 ) groups in one block,
+       so we should know the group_desc offset in that group block, and by the fomura:
+       	  offset = block_group & (EXT2_DESC_PER_BLOCK(sb) - 1);
+
+       Then we can get group_desc_number block memeory address, and plus the offset
+       then we fount it:
+       	    return desc + offset;
+       where the desc is the memory address of group_desc_numbr block.
+
+
+
+static struct buffer_head *
+read_block_bitmap( struct supber_block *sb, unsigned int block_group);
+
+       Read the bitmap for a given block_group, reading inot the specified
+       slot in the superblock's bitmap cache.
+
+       return buffer_head on success or NULL in case of failure.
+
+       first we get the address of group desc by ext2_get_group_desc,
+       	     desc = ext2_get_group_desc(sb, block_group, NULL);
+       then read it into the buffer:
+             bh = sb_read(sb, desc->bg_block_bitmap));
+       last, return bh if there aren't any errors.
+
+
+static void release_blocks( struct super_block *sb, int count);
+       just put the count blocks back to the s_freeblocks_counter and 
+       if count not zero set the s_dirt filed because we have changed it.
+       	  
+
+static void group_realease_blocks( struct super_block *sb, int group_no,
+       	    			   struct ext2_group_desc *desc, 
+				   struct buffer_head * bh,  int count);
+      Unlike release_blocks that changed the global free blocks count, it just
+      changed one group's free block count, and the group specified by the param decs
+      	      desc->bg_free_blocks_count += count;
+      and set s_dirt to 1.
+
+
+void ext2_free_blocks (struct inode * inode, unsigned long block,
+     		       unsigned long count);
+      just as the function name said, free given blocks.
+      
+      first it checks whether the block number is legal, if not return error.
+
+      1.get the group number:
+        block_group = (block - es->first_data_block) / EXT2_BLOCKS_PER_GROUP(sb);
+      	    
+        NOTE: with a block number ,first we can know whick group where the block in by
+.	      the foruma above, then the base of desc by:
+	      group_desc = block_group >> EXT2_DESC_PER_BLOCK_BITS(sb);
+	      let's take an example, say block 10536 with 8192 blocks per group, 8 groups
+	      descriptors per block, then:
+	      it's in the 10536/8192 = 1th group. Then with a block has 8 descriptors, so 
+	      it's in the 1 >> 3     = 0th block that stors the group descriptor.
+	      and be the 1 % 8       = 1th descriptor in that block.
+     2. get the offset in that group:
+     	bit = (block - (es->first_data_block) % EXT2_BLOCKS_PER_GROUP(sb);	   
+     3. check to see if we are freeing blocks across a group boundary.
+     	if so, do
+	      overflow = bit + count -EXT2_BLOCKS_PER_GROUP(sb);
+	      count -= overflow; 
+     4. release bitmap block buffer for the next read. Then read the groups bitmap
+     	block specified by the block_group  into block buffer by:
+	      bitmap_bh = read_block_bitmap(sb, blocks_group);
+        if fails, return errors.	      
+     5. get the groups descriptor by ext2_group_desc like
+     	      desc = ext2_get_group_desc(sb, block_group, &bh2);
+     6. check to see if the block needs to free in the right group or not.
+     7. check the bit status of the blocks that needed free one by one, if bit of 
+     	relative block are already cleared, then put a error messge, or clear it and 
+	increase group_freed.
+     8. mark the buffer dirty, if MS_SYNCHRONOUS flag set then flush it now.
+     9. frees the group's free block by
+     	      goup_release_blocks(sb, blck_group, desc, bh2, group_freed);
+	Then count the global free blocks to freed += group_freed;
+     10 if overflow, do the fllowing, then back to  1, do more again.
+     	      block += count;
+	      count = overflow;
+     11 release the bitmap block buffer, then put the totally freed block back to the 
+     	file system's super block by:
+	      release_blocks(sb, freed);	 
+
+
+int ext2_new_block (struct inode *indoe, unsinged long goal, 
+    		    u32 *prealloc_count, u32 *prealloc_block, int *err);
+     here comes the biggest function and most complex function in block.c file
+     it's really something let's do it one line at a time.
+
+     ext2_new_blocks uses a goal block to assist allocation. If the goal is 
+     free, or there is a free block within 32 blocks of the goal, that block
+     is allocated. Otherwise a forward search is made for a free block; within
+     each block group the search first looks for an entire free byte in the block
+     bitmap, and then for any free bit if that fails.
+     This function also updates quota and i_blocks field.
+
+     First, we get need to know who needs new blocks, off cause the file does.
+     As the file data stores in inode's i_blocks array, the inode structure
+     becames a important role in the block allocation process.
+     
+     REMEMBER it's big!!!
+
+
+
+
+ialloc.c
+	contains the indoes allocation and deallocation routines
+
+	The free inodes are managed by bitmaps. A file system contains several
+	blocks groups. Each group contains 1 bitmap block for block, 1 bitmap
+	block for inodes. N bocks for the inode table and the rest for data blocks.
+
+	The file system contains group descriptors which are located after the 
+	super block. Each descriptor contains the number of the bitmap block and 
+	the free blocks count in the block.
+
+
+
+static struct buffer_head * 
+read_inode_bitmap (struct super_block *sb, unsigned long block_gruop);
+
+	Read the inode allocation bitmap for a given block_group, reading
+	into the specified slot in the superblocks's bitmap cache.
+
+	Return buffer_head of bitmap on success or NULL.
+
+
+	First use ext2_get_group_desc function to locate the group descriptor,
+	then read the group's inode bitmap into buffer by sb_bread.
+
+static void ext2_release_inode( struct super_block *sb, int group, int dir);
+       
+        Fist locate it's group descriptor, then put 1 back to the 
+	bg_free_inodes_count filed. 
+	And if it's a directory, descrease the gb_used_dirs_count of group_desc
+	and s_dirs_counters of super_block.
+	set s_diry and mark the buffer dirty at last.
+
+
+void ext2_free_inode (struct inode * inode);
+
+         As you can guess , yeah , it's an IMPORTANT function.
+
+	 NOTE! When we get the inode, we're the only pepole
+     	 that have access to it, and as such there are no
+     	 race conditions we have to worry about. The inode 
+     	 is not on the hash-lists, and it cannot be reached 
+     	 through the filesystem because the directory entry
+     	 has been deleted earlier.
+
+     	 HOWEVER: we must make sure that we get no aliases,
+     	 which means that we have to call "clear_inode()"
+     	 _before_ we mark the inode not in use in the inode
+     	 bitmap. Otherwise a newly created file might use
+     	 the same inode number (not acturally the same pointer
+     	 through), and then we'd have two inodes sharing the
+     	 same inode number and space on the harddisk.
+
+
+	 Get the inode nubmer, check it in the right arange. Then get the group
+	 number and the inode offset off the INODE TABLE.
+	 Read the inode bitmap into buffer, clear the bit of the inode in the 
+	 group, then release the inode.
+
+
+
+
+struct inode *ext2_new_inode (struct inode *dir, int mode);
+       
+       Another IMPORTANT function in ialloc.c
+       
+       
+
+
+
+
+inode.c
+	I'm sorry i know a little about it , too.
+
+	
+
+
+void ext2_delete_inode (struct inode *inode);
+
+        First check if it is a bad inode.
+     	Set the i_dtime, that only be setted in delete.
+	Mark it dirty, update it

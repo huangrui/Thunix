@@ -1,0 +1,5 @@
+The memory managemant part not finished and not contained in the kernel yet, so
+let the code just be here. I just want the right kernel be more stabel as 
+possible as I can then go on with the mm part.
+
+            Aleaxander 3/23, 2009

@@ -1,0 +1,60 @@
+AS	= as -Iinclude
+CC	= gcc -nostdinc -Iinclude #-Wall
+LD	= ld
+LDFLAGS = --oformat binary -N
+
+KERNEL_OBJS = boot/head.o init/init.o kernel/kernel.o fs/ext2_fs.o
+
+.PHONY :clean backup
+
+
+
+.c.s:
+	${CC} -S -o $*.s $<
+.s.o:
+	${AS} -o $*.o $<
+.c.o:
+	${CC} -c -o $*.o $<
+
+
+all: thunix.img
+
+thunix.img: boot.img kernel.img
+	cat boot.img kernel.img > thunix.img
+	@wc -c thunix.img
+
+
+
+boot/boot.o:
+	(cd boot; make)
+init/init.o:
+	(cd init; make)
+kernel/kernel.o:
+	(cd kernel; make)
+fs/ext2_fs.o:
+	(cd fs; make)
+
+boot.img: boot/bootsect.o
+	${LD} ${LDFLAGS} -e start -Ttext 0x7c00 -o $@ $<
+kernel.img: ${KERNEL_OBJS}
+	${LD} ${LDFLAGS} -e pm_mode -Ttext 0x0000 -o $@ ${KERNEL_OBJS}
+
+
+backup: clean
+	(cp thunix.img ./image)
+	(rm -f thunix.img)
+	(cd ..; tar -cf /media/Soft/thunix/thunix-0.2-backup.tar thunix)
+
+bochs:
+	bochs -qf bochsrc 
+clean:
+	rm -f bochsout.txt boot.img kernel.img *~ include/*~
+	(cd boot; make clean)
+	(cd init; make clean)
+	(cd kernel; make clean)
+	(cd fs; make clean)
+
+
+dep:
+	(cd kernel; make dep)
+	(cd fs; make dep)
