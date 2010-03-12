@@ -1,0 +1,14 @@
+#
+# Print A char 'a' 
+#
+	movb $0x0e, %ah
+	movb $0x61,  %al
+	movb $0x0f, %bh
+	movb $0x00, %bl
+	int $0x10
+
+hang:
+	jmp hang
+
+.org 0x1fe, 0x90
+.word 0xaa55        	# bootsector flag
