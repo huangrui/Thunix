@@ -90,7 +90,6 @@ sector	|初始化， 如初始化cs, ds, ss, sp等寄存器
 1.4.1， 初始化
 对于一个简单的bootsctor来说， 初始很简单， 只包括些主要段寄存器的设置， 于栈的建立。 简要代码如下：
 	movw $0x00, %ax
-	movw %ax,   %cs
 	movw %ax,   %ds
 	movw %ax,   %ss
 	movw $0x7c00, %sp			
