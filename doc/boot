@@ -60,5 +60,112 @@ clean:
 
 当然， 对其稍作修改就可以写出个Hello World操作系统来了， 原代码如下：
 
-GRUB －－ www.gnu.org/grub
+
+1.4 ： 实用的bootsector引导代码
+现在对上面所讲的做个小结， 就如以下流程图所表示：
+－－－－－－－－－－－－－－－－－－－－－－－－－－－－－－－－－
+	开机, CPU收到RESET信号， 跳到BIOS处
+		 ｜
+		 ｜
+－－－－－－－－－－－－－－－－－－－－－－－－－－－－－－－－－
+    	|       POST
+	|	 ｜
+	|    设备初始化
+        |	 ｜   	     没有
+	|    引导设备检测   ------> 显示没有可引导设备， 并死机
+BIOS	|        ｜
+	|      有｜
+	|        ｜
+	| 读取引导扇区到内存地址0x7c00, 并跳转到此处执行
+－－－－－－－－－－－－－－－－－－－－－－－－－－－－－－－－－
+	|	 ｜
+boot	|	 ｜
+sector	|初始化， 如初始化cs, ds, ss, sp等寄存器
+	|载入内核至指定的内存， 并跳转到此处执行
+	|	 ｜ 
+－－－－－－－－－－－－－－－－－－－－－－－－－－－－－－－－－
+	|系统已经跑起来了
+－－－－－－－－－－－－－－－－－－－－－－－－－－－－－－－－－
+		
+1.4.1， 初始化
+对于一个简单的bootsctor来说， 初始很简单， 只包括些主要段寄存器的设置， 于栈的建立。 简要代码如下：
+	movw $0x00, %ax
+	movw %ax,   %cs
+	movw %ax,   %ds
+	movw %ax,   %ss
+	movw $0x7c00, %sp			
+当然， 也可以通过BIOS 0x10 0号中断初始化输出屏模式设置, 详情请参考 ［n］_BISO_int_0x10
+
+1.4.2： 加载内核
+对于一个bootsector来说， 最主要的使命就是把内核加载到内存。 对于磁盘的读取， 又得依靠于BIOS的读扇区中断，
+
+INT 13h AH=02h: 读扇区中断
+
+参数 :
+AH 	02h
+AL	要断的扇区数 
+CH 	磁道(Track)
+CL 	扇区号(Sector)
+DH 	磁头号(Head)
+DL 	驱动器标码(Drive), 0x0 为软盘， 0x80为硬盘
+ES:BX   buffer地址	
+
+结果 :
+CF 	置位表示出错， 反之表示成功
+AH 	返回码
+AL 	实际扇区所读数
+
+所以， 实际的代码可能像这样子（只含读扇区代码）：
+                ## in:  ax:     LBA address, starts from 0
+                ## es:bx address for reading sector
+read_sect:
+                pushw   %ax
+                pushw   %cx
+                pushw   %dx
+                pushw   %bx
+
+                movw    %si,    %ax
+                xorw    %dx,    %dx
+                movw    $18,    %bx     # 18 sectors per track
+                                        # for floppy disk
+                divw    %bx
+                incw    %dx
+                movb    %dl,    %cl     # cl=sector number
+                xorw    %dx,    %dx
+                movw    $2,     %bx     # 2 headers per track
+                                        # for floppy disk
+                divw    %bx
+
+                movb    %dl,    %dh     # head
+                xorb    %dl,    %dl     # driver
+                movb    %al,    %ch     # cylinder
+                popw    %bx             # save to es:bx
+rp_read:
+                movb    $0x1,   %al     # read 1 sector
+                movb    $0x2,   %ah
+                int     $0x13
+                jc      rp_read
+                popw    %dx
+                popw    %cx
+                popw    %ax
+                ret
+这里有两个要注意的地方： 第一， 很明显， 这里对某些寄存器值做了保护操作， 值得注意的就是出栈时的顺序与进栈时相反。 第二， 我们这里传给ax的值是以LBA方式取址， 而不是CHS模式， 所以在调用int 0x13之前， 必需做个转换。 关于LBA以及LBA与CHS的转换可参考该文 [n]
+至于你想把你的内核加载到内存哪个地址， 你仅需把该值设给ES:BX即可， 值得注意的就是小心把BIOS给覆盖掉了， BIOS位于从0开始的第1K字节。
+
+1.5 ： 跳转到内核
+假如上一步已经把内核加载到了内存地址0x1000, 那么下面的指令就会路转到那， 并执行刚载入的内核。
+	ljmp $0x00, $0x1000
+
+1.6 小结
+至此， 一个功能完整的bootsector就算完成了， 它可以加载相应的内核到你所想要的任何内存地址（理论上是的）， 也可以跳转到那执行内核。
+
+
+GRUB －－ www.gnu.org/software/grub
 SYSLINUX -- syslinux.zytor.com
+make -- www.gnu.org/software/make
+www.osdev.org
+www.osdever.net
+http://en.wikipedia.org/wiki/BIOS_interrupt_call
+http://en.wikipedia.org/wiki/INT_10
+http://en.wikipedia.org/wiki/INT_13
+http://www.viralpatel.net/taj/tutorial/chs_translation.php
