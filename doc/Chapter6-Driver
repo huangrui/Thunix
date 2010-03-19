@@ -1,0 +1,235 @@
+Chapter 6 基本驱动的实现
+
+在这章节中， 将先后介绍键盘--典型的输入系统， 软盘--存储设备及典型的输入输出系统， 时钟三个驱动的实现。
+
+6.1 键盘驱动的实现
+键盘驱动的实现相对比较简单， 其过程也很清晰： 捕捉键盘控制器的数据， 做出处理， 输出结果到屏幕上。 因此对于键盘驱动的实现， 我就主要以这三个步骤来写。
+
+6.1.1 捕捉键盘的数据
+这个小标题把事情说的复杂了些， 但其实问题很简单： 假如我在键盘上按一个字母 a , 键盘控制器就会把其相应的扫描码(这是一种键盘控制器内部识别的编码系统， 有点类似于ASCII， 给每个字符编上相对应的码， 之后便可用这个码来对应于其字符， 但不是ASCII， 具体的字母所对应的编码可查询相关的表）到特定的端口（0x60), 所以， 我们只要读取该端口，就能得知我们刚按下键的扫描码， 代码如下：
+	scancode = inb(0x60);
+
+6.1.2 处理
+就如上面所示， 要得到一个键所对应的扫描码一条语句就可以解决。 但在对其处理之前， 有必要讲下什么是扫描码， 以及按键与松键时所对应的扫描码又是如何。 扫描码分两种， make以及break。 当一个键按下时， 就会产生一个make码， 当一个键松开时便会得到一个break码。 通常来说， 一个扫描码用前七位来表示， 第八位刚表示其状态， 1表示break， 0表示make。 所以， 一个简单的处理程序是这样的：
+
+	if (scancode & 0x80）｛
+		/ It's a break code; it's useless for us, so just skip it. */
+		return;
+	｝else {
+		/* It's make code */
+		printf("%c", scancode_table[scancode]);
+	}
+
+其中， scancode_table是一张表（或者说是个字符数组）， index就是扫描码的值， 而scancode_table[index]就是其所对应的字符了（注， 此时是ASCII）。 如一个简单的scancode_table可以是这样：
+
+
+#defien NO 0x0
+
+static unsigned char scancode_table[] =
+{
+        NO,   0x1B, '1',  '2',  '3',  '4',  '5',  '6',  // 0x00
+        '7',  '8',  '9',  '0',  '-',  '=',  '\b', '\t',
+        'q',  'w',  'e',  'r',  't',  'y',  'u',  'i',  // 0x10
+        'o',  'p',  '[',  ']',  '\n', NO,   'a',  's',
+        'd',  'f',  'g',  'h',  'j',  'k',  'l',  ';',  // 0x20
+        '\'', '`',  NO,   '\\', 'z',  'x',  'c',  'v',
+        'b',  'n',  'm',  ',',  '.',  '/',  NO,   '*',  // 0x30
+	....
+} 
+从这里可以看出， 数字1所对应的扫描码是2， 也就是说当我们按下1时， scancode的值便为2， 而scancode_table[2]所对应的字符就是1了， 这便是一个键盘驱动处理的大概过程。 
+
+这是一个很简单的处理程序， 但可以处理绝大多数的按键， 最起码那些可打印字符之类的都可以正确处理。
+注意， 我们这里并没有对break码做出任何处理， 这很正常， 因为我们通常不期望松开键会发生什么事情。
+
+6. 1. 3 输出
+其实上面已经包含了一部分的输出， 如查询扫描码所对应的字符， 并用printf打印其值。 但是， 现实比上面的更复杂些， 如上面没有处理好大写字母， 多个键按下（组合键）没也没处理。 有的单个键甚至会产生多个make码， 以及多个break码。 再者， 有些甚至是非打印字符（如shift， fn键）， 又该如何处理。 有没发现， 其实我们现在所讲的还是处理， 因为输出 ， 其实一句话就可以解决。 
+
+先说第一问题， 大写字母。 这个问题可以用两张表来解决， 一张是normal_map, 另一张是shift_map， 分别对应普通情况下与大写情况下所对应的扫描码表。
+static unsigned char normal_map[256] =
+{
+        NO,   0x1B, '1',  '2',  '3',  '4',  '5',  '6',  // 0x00
+        '7',  '8',  '9',  '0',  '-',  '=',  '\b', '\t',
+        'q',  'w',  'e',  'r',  't',  'y',  'u',  'i',  // 0x10
+        'o',  'p',  '[',  ']',  '\n', NO,   'a',  's',
+        'd',  'f',  'g',  'h',  'j',  'k',  'l',  ';',  // 0x20
+        '\'', '`',  NO,   '\\', 'z',  'x',  'c',  'v',
+        'b',  'n',  'm',  ',',  '.',  '/',  NO,   '*',  // 0x30
+	....
+	....
+}
+
+static unsigned char shift_map[256] = {
+        NO,   033,  '!',  '@',  '#',  '$',  '%',  '^',  // 0x00
+        '&',  '*',  '(',  ')',  '_',  '+',  '\b', '\t',
+        'Q',  'W',  'E',  'R',  'T',  'Y',  'U',  'I',  // 0x10
+        'O',  'P',  '{',  '}',  '\n', NO,   'A',  'S',
+        'D',  'F',  'G',  'H',  'J',  'K',  'L',  ':',  // 0x20
+        '"',  '~',  NO,   '|',  'Z',  'X',  'C',  'V',
+        'B',  'N',  'M',  '<',  '>',  '?',  NO,   '*',  // 0x30
+        NO,   ' ',  NO,   NO,   NO,   NO,   NO,   NO,
+	...
+	...
+}
+
+
+也就是说， 普通情况下， 我们用第一张表的映射， 若是Caps Lock开着或是Shift按下时， 我们就用第二张表。 那如何知道Caps是开着还是关着呢？ 因为Caps Lock也是个按键， 所以必有一个扫描码与其对应，不过和之前所讲的不同的是， Caps Lock按下去之后， 它就将会保持一种状态（都大写或都小写）， 除非再次按下Caps Lock, 它的状态又将改变， 所以， 我们得用一个全局变量保持这种状态。因此， 简要代码可以是这样：
+	int caps_lock_status = 0;
+
+	switch () ｛
+	case CAPS_LOCK:
+		caps_lock_status ^= 1; /* 置返 */
+		break;
+	case ....
+		/* Handle other special scancodes here */
+		break;
+	default:
+		printf("%c", get_right_map()[scancode]);
+		break;
+	}
+此处中的get_right_map会根据caps lock是否开着而返回一个正确的map。 代码简写如下：
+
+static inline unsigned char *get_right_map()
+{
+	if (caps_lock_status)
+		return shift_map
+	else
+		return normal_map
+}
+
+好的， 大小写的问题也能处理了。 至于组合键与shift， 及多个扫描码的处理， 因稍较复杂， 这里就不详究。 
+
+6.2 软盘驱动
+软盘的驱动实现相对比键盘驱动复杂多了， 因为这会涉及到更多的端口读与写使命（而键盘我们比较关注的只有一个）。 编程端口如下：
+                软盘控制器端口
+-----------------------------------------------------
+ 端口 	读写性 	寄存器名称
+-----------------------------------------------------
+0x3f2	只写  	数字输出寄存器(DOR)(数字控制寄存器)
+-----------------------------------------------------
+0x3f4  	只读  	FDC 主状态寄存器(STATUS)
+-----------------------------------------------------
+0x3f5  	读/写 	FDC 数据寄存器(DATA)
+-----------------------------------------------------
+       	只读  	数字输入寄存器(DIR)
+0x3f7
+       	只写  	磁盘控制寄存器(DCR)(传输率控制)
+-----------------------------------------------------
+
+首先讲解几个helper函数， send_byte 与 get_byte。 
+ 
+/*
+ *   send a byte to FD_DATA register 
+ */
+static void send_byte (unsigned char byte)
+{
+        volatile int msr;
+        int counter;
+        
+	for (counter = 0; counter < 1000; counter++) {
+                msr = inb_p(FD_STATUS) & (STATUS_READY | STATUS_DIR);
+		/*
+		 * msr 为 读取状态寄存器之后值， 我们仅当STATUS_READY成立之后，
+	 	 * 并且是DOR(数据从cpu到控制器）， 才发送数据。
+		 */
+                if (msr == STATUS_READY) {
+                        outb(byte,FD_DATA);
+                        return ;
+                }
+        }
+        printk("Unable to send byte to FDC\n");
+}
+/*
+ * get *ONE* byte of results from FD_DATA register then return what 
+ * it get, or retrun -1 if faile.
+ */
+static int get_byte()
+{
+        volatile int msr;
+        int counter;
+
+        for (counter = 0; counter < 1000; counter ++) {
+                sleep(1); /* delay 10ms */
+                msr = inb_p(FD_STATUS) & (STATUS_DIR|STATUS_READY|STATUS_BUSY);
+                if (msr == (STATUS_DIR|STATUS_READY|STATUS_BUSY))
+                        return inb_p(FD_DATA);
+        }
+        printk("get_byte: get status times out!\n");
+        return -1;
+}
+
+
+6.2.1 中断的处理
+cpu发送命令至软盘控制器， 控制器便开始执行命令（如读写数据， seek， 等）， 若这一操作完成了， 便会产生一个中断， 告诉CPU， 你要我做的事情已经做好了。 接着CPU便会做下善后的工作， 如检查其状态， 置位一些flag变量等等。 对于软盘中断的处理，很简单， 只是置位一全局变量， 告知， 中断已完成。 简要代码如下：
+static void floppy_interrupt(void)
+{
+	done = 1;
+	outb(0x20, 0x20); /* End of Interrupt， 这是一部必要的操作, 告知中断已完成 */
+} 
+
+
+
+6.2.2 seek 操作
+对于一个磁盘设备来说， 自然少不了磁头的seek操作。软盘的seek操作可以通过如下命令操作：
+
+#define FD_SEEK         0x0F            /* seek track */
+
+	send_byte(FD_SEEK);  /* 发送 seek 命令 */
+	send_byte(0);        /* 发送参数:磁头号+当前软驱号 */
+	send_byte(track);    /* 发送参数:磁道号 */
+
+	sleep_a_while();    /* 等待中断完成 */
+	if (!done)
+		return -1; /* seek error */
+	
+
+6.2.3 数据的读写
+ 数据读或写操作需要分几步来完成。首先驱动器马达需要开启,然后把磁头定位到正确的磁道上, 最后发送数据读或写命令。 开始马达可用如下命令：
+	outb(0x1c, FD_DOR);
+而关于seek操作可以用上面的代码。 在读写之前， 必需把LBA形式的扇区数改为CHS计数方式 ， 如下：
+
+static void block_to_hts(struct floppy *floppy, int sector_number, int *head, int *track, int *sector)
+{
+        *sector = sector_number % floppy->sector;
+        sector_number /= floppy->sector;
+        *head = sector_number % floppy->head;
+        *track = sector_number / floppy->head;
+}
+
+
+
+6.3 时钟中断
+时钟驱动总的来说很简单， 代码如下：
+
+void timer_init(int hz)
+{
+	/* hz 指向的是频率， 假如hz为100， 并表示1秒内会有一百个时钟中断发生 */
+	unsigned int divisor = 1193180 / hz;   
+	outb(0x36, 0x43);         /* 发送命令字到0x43端口 */
+	outb(divisor&0xff, 0x40); /* 写入低8字节 */
+	outb(divisor>>8, 0x40);   /* 写入高8字节 */
+
+	set_idt_entry(0x20, timer_interrupt);  /* 最后别忘了设好IDT项 */
+	outb(inb(0x21)&0xfe, 0x21);            /* 以及开中断 */
+} 
+
+正如你所想， timer_interrupt将会是很简单：
+
+unsigned long long timer_ticks = 0;  /* 全局变量 ， 记录着开机以来的滴答数 */
+
+static void timer_interrupt(void)
+{
+	timer_ticks++;
+}
+
+好的， 时钟中断有了， 因此我们就可以实现诸如sleep, sleep_a_while之类的了。 简单的sleep实现如下：
+void sleep(unsigned long sleep_value)
+{
+        unsigned long long now_ticks = timer_ticks;
+
+        do{
+                ;
+        }while ( timer_ticks < now_ticks + sleep_value);
+        
+}
+
+
