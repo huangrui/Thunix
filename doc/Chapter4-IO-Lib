@@ -47,7 +47,7 @@ int main(void)
 |  ....
 -----------
 
-所以， 对应于一个灰似于这样的函数调用 printf("The sum of %d and %d is %d\n", a, b, a + b) 的栈空间大概如下：
+所以， 对应于一个类似于这样的函数调用 printf("The sum of %d and %d is %d\n", a, b, a + b) 的栈空间大概如下：
 
 -------------  <----- Stack TOP
 ｜
@@ -119,9 +119,9 @@ void init(void)
 	printk("The system is saying %s", "Hello world again"）；
 ｝
 是的， 我们已经有了自己的printk函数。
-相
+
 4.3 小结
-这里我们简单地实现了两个重要的函数， 第一个是puts，相于将一字符串输出到屏幕上， 第二个是printk， 格式化输出， 用法和printf一样。 
+这里我们简单地实现了两个重要的函数， 第一个是puts，将一字符串输出到屏幕上， 第二个是printk， 格式化输出， 用法和printf一样。 
 
 当然， 我们可以自己实现更多的常用函数， 如strcpy：
 void strcpy(char *dst, const char *src)

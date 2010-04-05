@@ -75,7 +75,7 @@ block_bitmap管理的是后面的标有 Data blocks 的所有块。 这也就是
 block bitmap 以及 inode bitmap 就如前面所讲， 用于记录块（或是节点）的分配情况。 
 
 7.2.4 inode table
-接下来的便是inode table， 节点表， 存放的是这个组内的节点数数据结构。在给出indoe的结构体之前， 有必要好好讲一下什么是inode（节点）。 在UNIX系统中， 一个文件的信息全部记载在一个叫作inode的结构中。 比如这个文件的大小， 创建时间， 最近修改时间， 这个文件系统的数据存放在磁盘的哪几个块中， 等等。 因此， 每一个文件都有一个相对应的节点。 因此， 当我们要删除一个文件时， 我们得找到那个节点， 要打开一个文件时， 也得要找那个节点， 等等。 那么， 从哪找到相应的节点呢？ 答案是， inode table。 所有于文件相当的操作， 在内核中都要找到其相应的节点。 正如你所想， 如我要创建一个文件时呢？ 那么系统将分配一个新的节点。 那么从哪里分配呢？ 答案是， 从inode table那里分配。 所以， 这就是inode table的作用。
+接下来的便是inode table， 节点表， 存放的是这个组内的节点数数据结构。在给出indoe的结构体之前， 有必要好好讲一下什么是inode（节点）。 在UNIX系统中， 一个文件的信息全部记载在一个叫作inode的结构中。 比如这个文件的大小， 创建时间， 最近修改时间， 这个文件系统的数据存放在磁盘的哪几个块中， 等等。 因此， 每一个文件都有一个相对应的节点。 因此， 当我们要删除一个文件时， 我们得找到那个节点， 要打开一个文件时， 也得要找那个节点， 等等。 那么， 从哪找到相应的节点呢？ 答案是， inode table。 所有与文件相当的操作， 在内核中都要找到其相应的节点。 正如你所想， 如我要创建一个文件时呢？ 那么系统将分配一个新的节点。 那么从哪里分配呢？ 答案是， 从inode table那里分配。 所以， 这就是inode table的作用。
 
 现在， 有必要给出indoe的结构体了：
 struct ext2_inode {
@@ -88,7 +88,7 @@ struct ext2_inode {
 	__u32 i_dtime;		/* 20: 删除时间 */
 	__u16 i_gid;		/* 用户组 ID */
 	__u16 i_links_count;	/* 24: 链接数 */
-	__u32 i_blocks;		/* 占用的块, 其实为占有的扇区数 */
+	__u32 i_blocks;		/* 占用的块, 其实为占用的扇区数 */
 	__u32 i_flags;		/* 32: File flags */
 	__u32 osd1;			/* OS dependent 1 */
 	__u32 i_block[EXT2_N_BLOCKS];	/* 40: 极其重要， 记录了文件数据存储的块地址 */
@@ -122,7 +122,7 @@ i_size记录了该文件的大小。 (x)time则记录了相应的时间（访问
 若一个文件的大小大于12， 但小于 block_size / 4 + 12。 则第13个块开始， 使用一级间接模式。 原理为：
 i_block［12］, 指向一个块， 比如M， 则M的内容， 就是块地址， 而不是所谓的文件数据， 一个块地址占4个字节， 因此一个块， 最多能表示 block_size ／ 4 个块地址。
 
-以此推之， i_block[13] 用于 二级间接模式， i_block[14] 用于三级间接模式。
+以此推之， i_block[13] 用于二级间接模式， i_block[14] 用于三级间接模式。
 
 块的寻址模式简单实现如下：
 /* 
@@ -206,7 +206,7 @@ unsigned int bmap(struct fstk *fs, struct inode *inode, uint32_t block)
 
 注， 上面这部分代码来自我的另一个开源项目， fstk。 其代码在 http://repo.or.cz/w/fstk.git. 因为fstk中的EXT2文件系统的代码实现的比较完善与合理， 包括接下来的代码我都将采用fstk的代码。
 
-关于节点， 还有一很重要的内容没讲到， 用什么标示一个点， 通过路径如何找到那个文件， 这部分将在下面详述。
+关于节点， 还有一很重要的内容没讲到， 用什么标示一个节点， 通过路径如何找到那个文件， 这部分将在下面详述。
 
 
 7.2.5 data blocks
@@ -283,7 +283,7 @@ file_type 	描述
 7.4 再谈inode
 inode在UNIX体系文件系统中， 乃至linux VFS（虚拟文件系统）中， 占据着极其重要的作用， 以至于我将花很大一部分的篇幅来讲解它。
 
-上面说到， 一个文件对应着一个indoe。 一个inode由inode number表示。 那为什么要用inode number来表示来表示一个inode呢？ 一个inode number如何又能定位到其对应的inode结构体呢？ 现再回答前面的inode table， 那里其实存放的inode结构体， 相当于其是一个inode结构的数组。一个块能存放 block_size / sizeof(struct ext2_inode) 个inode结构体。 一个值得注意的事情就是， inode number 是从1开始计数的！ 为了更好的了解inode number于inode结构的连接， 举例如下（ext2_inode结构体的大小为128字节， 现假设block_size=1K）：
+上面说到， 一个文件对应着一个indoe。 一个inode由inode number表示。 那为什么要用inode number来表示来表示一个inode呢？ 一个inode number如何又能定位到其对应的inode结构体呢？ 现在回到前面的inode table， 那里其实存放的是inode结构体， 相当于其是一个inode结构的数组。一个块能存放 block_size / sizeof(struct ext2_inode) 个inode结构体。 一个值得注意的事情就是， inode number 是从1开始计数的！ 为了更好的了解inode number于inode结构的连接， 举例如下：
 
 假设我们要访问第二个inode （EXT2文件系统中的根（root）结点）， 首先得知道这个节点是在哪个block group, 计算方法如下：
 
@@ -293,7 +293,7 @@ inode_group = (inr - 1) / super_block->s_inodes_per_group
 inode_offset = (inr - 1） % super_block->s_inodes_per_group
 
 第三是， 获得相应的group的group descriptor
-这个做法和访和一个节点类似， 因为也是一个数字对应着一个结构的寻找过程， 但一个文件系统的块组相对来说比较少， 如一个1.44M的软盘只有一个组， 我现在的所使用的根文件系统也就128个组（40G的文件系统）。 所以， 在对ext2文件系统mount的时候， 我们可以把该文件系统的所有group descriptor都缓冲起来。因为group descriptor的访问讲是很频繁的， 这将大大提高性能， 所以， 在ext2_mount中， 可以加上这些语句：
+这个做法和访和一个节点类似， 因为也是一个数字对应着一个结构的寻找过程， 但一个文件系统的块组相对来说比较少， 如一个1.44M的软盘只有一个组， 我现在的所使用的根文件系统也就128个组（40G的文件系统）。 所以， 在对ext2文件系统mount的时候， 我们可以把该文件系统的所有group descriptor都缓冲起来。因为group descriptor的访问将是很频繁的， 这将大大提高性能， 所以， 在ext2_mount中， 可以加上这些语句：
         sbi->s_group_desc = fstk_malloc(sizeof(struct ext2_group_desc *) 
                                    * sbi->s_groups_count);
         if (!sbi->s_group_desc)
@@ -473,7 +473,7 @@ struct file {
 	struct inode *inode;
 };
 
-是的， 一般来说， file结构体里面比较关心的域就这么两个， 第一个offset, 指点了从哪开始读（或写）， 我们常用的lseek函数就是用于修改此值， 因此， lseek的实现将是很简单：
+是的， 一般来说， file结构体里面比较关心的域就这么两个， 第一个offset, 指定了从哪开始读（或写）， 我们常用的lseek函数就是用于修改此值， 因此， lseek的实现将是很简单：
 __u32 fstk_lseek(struct file *file, int off, int mode)
 {
         if (mode == SEEK_CUR)
