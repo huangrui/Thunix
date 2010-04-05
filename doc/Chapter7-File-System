@@ -1,0 +1,574 @@
+Chapter 7 文件系统的实现
+
+这一章节将以EXT2为例讲述一个具体的文件系统的实现。 文件系统的设计与实现， 归根到底就是一个文件的管理系统， 说简单点， 就如学生管理系统一样， 管理学生的种种数据。稍微具体点就是： 该文件系统在整个磁盘空间的布局， 文件的结构， 文件系统树的结构如何实现， 等等一系列问题。
+
+7.1 EXT2 概述
+Linux最初采用的文件系统是MINIX文件系统， 这是一种很传统的UNIX文件系统， 但存在很多种种缺陷， 如文件名不能超过14个等等。 随着Linux的成熟， 便引进了扩展文件系统（Extended Filesystem, Ext FS)， 它解决了很多MINIX文件系统所存在的问题， 但这却不是一个稳定的文件系统， 所以， 就有了EXT2文件系统。 它开始由Rémy Card设计，用以代替ext。  EXT2就如其它常见的文件系统一样， 也用块(block)来管理磁盘数据（注意， 不是用扇区）， 这很明显是为了提高文件系统的读写性能。 之后至今， EXT2（包括后来的EXT3， EXT4）都是Linux下的默认文件系统。
+
+7.2 EXT2的磁盘空间布局
+        |<-------------------Block  Group 0------------------------>|
++-------+-------+-------------+------------+---------------+--------+---...---+-----------------+
+| Boot  | super |   Group     | Data block | inode | inode |  Data  |         |	     block	|
+| Block | Block | Descriptors |  bitmap    | bitmap| Table | blocks |         |	    group n	|
++-------+-------+-------------+------------+-------+-------+--------+---...---+-----------------+
+1 block  1 block   n blocks      1 block    1 block n blcoks n blocks
+
+正如你所见， EXT2的磁盘布局大概如下：
+ 1) 第一块， 为引导扇区， 包含着引导这个分区的引导代码。
+ 2）接下来的所有块， 便是属于EXT2文件系统。 它被分成很多个组， 称为block group， 每个组都包含着相似的布局：
+
+7.2.1 super block
+超级块（super block）， 位于第一块， 包含着整个文件系统的元数据，主要数据如下：
+struct ext2_super_block { 
+	__u32 s_inodes_count;	/* 整个文件系统的节点数 (一个节点对应着一个文件， 下面将详述） */
+	__u32 s_blocks_count;	/* 整个文件系统的块数 */
+	__u32 s_r_blocks_count;	/* 预留的块数 */
+	__u32 s_free_blocks_count;	/* 空闲的块数 */
+	__u32 s_free_inodes_count;	/* 空闲的节点数 */
+	__u32 s_first_data_block;	/* 第一个数据块的块地址 */
+	__u32 s_log_block_size;	/* 块大小 */
+	__s32 s_log_frag_size;	/* Fragment size */
+	__u32 s_blocks_per_group;	/* 每个组有多少个块 */
+	__u32 s_frags_per_group;	/* # Fragments per group */
+	__u32 s_inodes_per_group;	/* 每个组有多少个节点 */
+	__u32 s_mtime;		/* Mount time */
+	__u32 s_wtime;		/* Write time */
+	__u16 s_mnt_count;		/* Mount count */
+	__s16 s_max_mnt_count;	/* Maximal mount count */
+	__u16 s_magic;		/* 幻数， 用于标识这个系统文件系统是 EXT2 文件系统 */
+	__u16 s_state;		/* File system state */
+	__u16 s_errors;		/* Behaviour when detecting errors */
+	__u16 s_pad;
+	__u32 s_lastcheck;		/* time of last check */
+	__u32 s_checkinterval;	/* max. time between checks */
+	__u32 s_creator_os;		/* OS */
+	__u32 s_rev_level;		/* Revision level */
+	__u16 s_def_resuid;		/* Default uid for reserved blocks */
+	__u16 s_def_resgid;		/* Default gid for reserved blocks */
+	__u32 s_reserved[235];	/* Padding to the end of the block */
+};
+重要的数据我都用中文件注释了。 这是一个描述整个文件大概情况的数据结构， 如， 我们可以通过 s_inodes_count 和 s_log_block_size两者的组合就能知道这个文件系统的大小。 s_inodes_count表示这个系统最大可以有多少个文件，等等。
+
+Super block占一个块的空间。
+
+7.2.2 block group descriptors
+块组描述符(block group descriptors）， 位于第二块始， 占N个块， 具体数据和文件系统的大小以及块大小有关。 数据结构如下：
+struct ext2_group_desc {
+	__u32 bg_block_bitmap;	/* 这个组的块位图的块地址 */
+	__u32 bg_inode_bitmap;	/* 节点位图的块地址 */
+	__u32 bg_inode_table;	/* 节点表的块地址 */
+	__u16 bg_free_blocks_count;	/* 空闲块的个数 */
+	__u16 bg_free_inodes_count;	/* 空闲节点的个数 */
+	__u16 bg_used_dirs_count;	/* 在这个块的目录个数 */
+	__u16 bg_pad;
+	__u32 bg_reserved[3];
+};
+
+这个记录着这个组的主要信息， 其中有必要讲解一位什么是bitmap，EXT2文件系统有位（bit）来管理块以及节点的分配与回收， 通常来说， 1表示这个块已被分配， 0表示这个块目前空闲， 每分配一个块之后， 相应的位得置1， 与之相对应， 回收一个块都清0。 所以， EXT2在每个块组中用一个块来保存这些位的信息， 也就是所谓的位图块, 所以， bg_block_bitmap就是用于表示这个组的的块分配情况的块的地址。 与之对应bg_inode_bitmap用于表示节点位图所在的块地址。 因此， 一个块组所能包含的块个数为: 块大小 * 8。 比如块大小为1K，那么一个block group的所能包含的块大小为8092。 
+
+block_bitmap管理的是后面的标有 Data blocks 的所有块。 这也就是我们文件内容所存在的地方。 而inode_bitmap管理的是节点结构的位图块。 关于节点的内容后面将详述。
+
+
+所以， 一个文件系统的块组个数 ＝ s_blocks_count / 一个块所能包含的块个数。因此， 块组描述符所占的块个数为： 块组个数 * sizeof (struct ext2_group_desc) ／ block_size。 
+
+7.2.3 bitmap
+block bitmap 以及 inode bitmap 就如前面所讲， 用于记录块（或是节点）的分配情况。 
+
+7.2.4 inode table
+接下来的便是inode table， 节点表， 存放的是这个组内的节点数数据结构。在给出indoe的结构体之前， 有必要好好讲一下什么是inode（节点）。 在UNIX系统中， 一个文件的信息全部记载在一个叫作inode的结构中。 比如这个文件的大小， 创建时间， 最近修改时间， 这个文件系统的数据存放在磁盘的哪几个块中， 等等。 因此， 每一个文件都有一个相对应的节点。 因此， 当我们要删除一个文件时， 我们得找到那个节点， 要打开一个文件时， 也得要找那个节点， 等等。 那么， 从哪找到相应的节点呢？ 答案是， inode table。 所有于文件相当的操作， 在内核中都要找到其相应的节点。 正如你所想， 如我要创建一个文件时呢？ 那么系统将分配一个新的节点。 那么从哪里分配呢？ 答案是， 从inode table那里分配。 所以， 这就是inode table的作用。
+
+现在， 有必要给出indoe的结构体了：
+struct ext2_inode {
+	__u16 i_mode;		/* 文件类型 */
+	__u16 i_uid;		/* 文件的所有者 */
+	__u32 i_size;		/* 4: 文件大小 */
+	__u32 i_atime;		/* 最近访问时间 */
+	__u32 i_ctime;		/* 12: 创建时间 */
+	__u32 i_mtime;		/* 最近修改时间 */
+	__u32 i_dtime;		/* 20: 删除时间 */
+	__u16 i_gid;		/* 用户组 ID */
+	__u16 i_links_count;	/* 24: 链接数 */
+	__u32 i_blocks;		/* 占用的块, 其实为占有的扇区数 */
+	__u32 i_flags;		/* 32: File flags */
+	__u32 osd1;			/* OS dependent 1 */
+	__u32 i_block[EXT2_N_BLOCKS];	/* 40: 极其重要， 记录了文件数据存储的块地址 */
+	__u32 i_version;		/* File version (for NFS) */
+	__u32 i_file_acl;		/* File ACL */
+	__u32 i_dir_acl;		/* Directory ACL */
+	__u32 i_faddr;		/* Fragment address */
+	__u32 osd2[3];		/* OS dependent 2 */
+};
+ 
+i_mode记录了该文件的类型， 在UNIX体系中， 所有的东西都以文件的形式表示， 如读取第一个硬盘的MBR，也以这么表示:
+
+	fd = open("/dev/sda");
+	read(fd, mbr_buf, 512);			
+目录也是文件。 所以， 在UNIX体系中有下列类文件：
+Regural file， 	普遍文件
+directory	目录
+device file	设备文件， 如/dev/sda
+pipe		管道
+symlink		链接
+socket 		套接字
+
+因此， 文件的类型记录了该文件是上述哪一种类型的文件。
+
+i_size记录了该文件的大小。 (x)time则记录了相应的时间（访问， 创建， 修改， 删除）。
+
+上面的那些域给出了一个文件的相当信息， 但我们更多的是要访问或是修改该文件的文件内容， 因此，接下来， 一个相当重要的域， i_block。 这是一个数组， 共有 EXT2_N_BLOCKS 个元素， 其值通常来说是15。 但很明显， 这并不代表一个文件的大小最大为 15 * block_size。 因此， 这个域不但记载了文件数据存在于哪个块， 还记录了数据块的寻址模式：
+
+若一个文件的大小小于12个块， 则用i_block[0] ... i_block[11] 表示，这就是所谓的直接模式， 因此小文件的寻址是很快速的。
+
+若一个文件的大小大于12， 但小于 block_size / 4 + 12。 则第13个块开始， 使用一级间接模式。 原理为：
+i_block［12］, 指向一个块， 比如M， 则M的内容， 就是块地址， 而不是所谓的文件数据， 一个块地址占4个字节， 因此一个块， 最多能表示 block_size ／ 4 个块地址。
+
+以此推之， i_block[13] 用于 二级间接模式， i_block[14] 用于三级间接模式。
+
+块的寻址模式简单实现如下：
+/* 
+ * handle the traditional block map, like indirect, double indirect 
+ * and triple indirect 
+ */
+unsigned int bmap(struct fstk *fs, struct inode *inode, uint32_t block)
+{
+        int block_size = 1 << fs->block_shift;
+        int addr_per_block = block_size >> 2;
+        uint32_t direct_blocks = EXT2_NDIR_BLOCKS,
+                indirect_blocks = addr_per_block,
+                double_blocks = addr_per_block * addr_per_block,
+                triple_blocks = double_blocks * addr_per_block;
+        struct cache_struct *cs;
+        
+        /* direct blocks */
+        if (block < direct_blocks)
+                return inode->data[block];
+        
+        /* indirect blocks */
+        block -= direct_blocks;
+        if (block < indirect_blocks) {
+                unsigned int ind_block = inode->data[EXT2_IND_BLOCK];
+                
+                if (!ind_block)
+                        return 0;
+                cs = get_cache_block(fs, ind_block);
+                
+                return ((uint32_t *)cs->data)[block];
+        }
+
+
+        /* double indirect blocks */
+        block -= indirect_blocks;
+        if (block < double_blocks) {
+                unsigned int dou_block = inode->data[EXT2_DIND_BLOCK];
+                
+                if (!dou_block)
+                        return 0;                
+                cs = get_cache_block(fs, dou_block);
+
+                dou_block = ((uint32_t *)cs->data)[block / addr_per_block];
+                if (!dou_block)
+                        return 0;
+                cs = get_cache_block(fs, dou_block);
+
+                return ((uint32_t *)cs->data)[block % addr_per_block];
+        }
+
+
+        /* triple indirect block */
+        block -= double_blocks;
+        if (block < triple_blocks) {
+                unsigned int tri_block = inode->data[EXT2_TIND_BLOCK];
+          
+                if (!tri_block)
+                        return 0;
+                cs = get_cache_block(fs, tri_block);
+
+                tri_block = block / (addr_per_block * addr_per_block);
+                tri_block = ((uint32_t *)cs->data)[tri_block];
+                if (!tri_block)
+                        return 0;
+                cs = get_cache_block(fs, tri_block);
+
+                tri_block = (block / addr_per_block) % addr_per_block;
+                tri_block = ((uint32_t *)cs->data)[tri_block];
+                if (!tri_block)
+                        return 0;
+                cs = get_cache_block(fs, tri_block);
+                
+                return ((uint32_t *)cs->data)[block % addr_per_block];
+        }
+                
+
+        /* File too big, can not handle */
+        printf("ERROR, file too big\n");
+        return 0;
+}
+
+注， 上面这部分代码来自我的另一个开源项目， fstk。 其代码在 http://repo.or.cz/w/fstk.git. 因为fstk中的EXT2文件系统的代码实现的比较完善与合理， 包括接下来的代码我都将采用fstk的代码。
+
+关于节点， 还有一很重要的内容没讲到， 用什么标示一个点， 通过路径如何找到那个文件， 这部分将在下面详述。
+
+
+7.2.5 data blocks
+数据块（data blocks）， 也就是我们所关心的文件内容存放的地方， 由bg_block_bitmap块所管理。
+
+
+7.3 目录
+目录（directory）， 在文件系统中， 目录是一个包含文件与目录的集合。 在UNIX体系中， 目录也是文件， 其内容就是目录项， 每一个目录项对应着一个文件。 目录项的结构体为:
+
+#define EXT2_NAME_LEN 255
+struct ext2_dir_entry {
+	unsigned int	d_inode;			/* 节点号， 很重要， 将详述 */
+	unsigned short	d_rec_len;		/* 这个目录项所占的字节长度， 4字节对齐 */
+	unsigned char	d_name_len;		/* 文件名长度 */
+	unsigned char	d_file_type;
+	char	d_name[EXT2_NAME_LEN];	        /* 文件名*/
+};
+
+
+7.3.1 d_inode
+节点号， 标示着一个节点， 也即标示着一个文件， 后面详述。
+
+7.3.2 d_rec_len
+为什么要用rec_len， 一个目录项的大小不是可以用sizeof(struct ext2_dir_entry)计算么？ 原因有二，第一， EXT2＿NAME＿LEN指定的是文件名的最大长度， 所以， 我们一般不会用255个字节的空间去存放一个比如只有4字节的文件名（如， file),  因此， 在硬盘上， 第二个目录项的起始地址不是从sizeof(struct ext2_dir_entry)开始的， 而是从第一个目录项的rec_len开始的。 因此， 获取下一个目录项是可以简写如下：
+
+static inline struct ext2_dir_entry *ext2_next_entry(struct ext2_dir_entry *p)
+{
+        return (struct ext2_dir_entry *)((char*)p + p->d_rec_len);
+}
+
+第二， 就是目录项的长度是4字节对齐的。 所以， rec_len的长度可以这么计算：
+
+#define EXT2_DIR_PAD	 4
+#define EXT2_DIR_ROUND 	(EXT2_DIR_PAD - 1)
+#define EXT2_DIR_REC_LEN(name_len)	(((name_len) + 8 + EXT2_DIR_ROUND) & \
+					 ~EXT2_DIR_ROUND)
+
+7.3.3 d_name_len
+文件名的长度， 实际长度， 注， 在目录项中， 文件名没有规定文件名得以null字符结束， 这也就是为什么还要符加一个name_len的原因。 因此， 下面的ext2_match_entry将是错误的：
+
+static inline int ext2_match_entry (const char * const name,
+                                    struct ext2_dir_entry * de)
+{
+        return !strcmp(name, de->d_name);
+}
+
+正确的如下：
+static inline int ext2_match_entry (const char * const name,
+                                    struct ext2_dir_entry * de)
+{
+        if (!de->d_inode)
+                return 0;
+	if (strlen(name) != de->d_name_len)  /* 如长度不等， 则必不相同 */
+		return 0;
+        return !strncmp(name, de->d_name, strlen(name));
+}
+
+7.3.4 file_type
+记录了具体的文件类型
+file_type 	描述
+0		unknown
+1		普通文件
+2		目录
+3		字符设备
+4		块设备
+5		管道
+6		套接字
+7		符合链接
+
+7.3.5 d_name
+文件名， 值得注意的是， 这里的文件名没有规定结尾符。
+
+
+7.4 再谈inode
+inode在UNIX体系文件系统中， 乃至linux VFS（虚拟文件系统）中， 占据着极其重要的作用， 以至于我将花很大一部分的篇幅来讲解它。
+
+上面说到， 一个文件对应着一个indoe。 一个inode由inode number表示。 那为什么要用inode number来表示来表示一个inode呢？ 一个inode number如何又能定位到其对应的inode结构体呢？ 现再回答前面的inode table， 那里其实存放的inode结构体， 相当于其是一个inode结构的数组。一个块能存放 block_size / sizeof(struct ext2_inode) 个inode结构体。 一个值得注意的事情就是， inode number 是从1开始计数的！ 为了更好的了解inode number于inode结构的连接， 举例如下（ext2_inode结构体的大小为128字节， 现假设block_size=1K）：
+
+假设我们要访问第二个inode （EXT2文件系统中的根（root）结点）， 首先得知道这个节点是在哪个block group, 计算方法如下：
+
+inode_group = (inr - 1) / super_block->s_inodes_per_group
+
+第二是， 求得其偏移值：
+inode_offset = (inr - 1） % super_block->s_inodes_per_group
+
+第三是， 获得相应的group的group descriptor
+这个做法和访和一个节点类似， 因为也是一个数字对应着一个结构的寻找过程， 但一个文件系统的块组相对来说比较少， 如一个1.44M的软盘只有一个组， 我现在的所使用的根文件系统也就128个组（40G的文件系统）。 所以， 在对ext2文件系统mount的时候， 我们可以把该文件系统的所有group descriptor都缓冲起来。因为group descriptor的访问讲是很频繁的， 这将大大提高性能， 所以， 在ext2_mount中， 可以加上这些语句：
+        sbi->s_group_desc = fstk_malloc(sizeof(struct ext2_group_desc *) 
+                                   * sbi->s_groups_count);
+        if (!sbi->s_group_desc)
+                malloc_error("sbi->s_group_desc");
+        desc_buffer = fstk_malloc(db_count * block_size);
+        if (!desc_buffer)
+                malloc_error("desc_buffer");
+        for (i = 0; i < (int)sbi->s_groups_count; i++) {
+                sbi->s_group_desc[i] = (struct ext2_group_desc *)desc_buffer;
+                desc_buffer += esb->s_desc_size;
+        }
+  
+是的， 这里多了一个结构体， sbi(super block info), 这是super block的内存版（super block 存于磁盘）， 它不但包含了该文件系统的主要信息， 也可以包含些其它只存于内存的重要信息， 以便于于提高访问速度从而提高性能， 如上述的desc_buffer。 所以， ext2_get_groupb_descriptor将是很简单：
+
+struct ext2_group_desc * ext2_get_group_desc(struct fstk *fs,
+                                             unsigned int group_num)
+{
+        struct ext2_sb_info *sbi = fs->fs_info;
+	
+	if (group_num >= sbi->s_groups_count) {
+		printf ("ext2_get_group_desc"
+                        "block_group >= groups_count - "
+                        "block_group = %d, groups_count = %d",
+                        group_num, sbi->s_groups_count);
+                
+		return NULL;
+	}        
+		
+        return sbi->s_group_desc[group_num];
+}
+
+接下来就是获取在inode table中所对应的块了, 以及其偏移值：
+
+        block_num = desc->bg_inode_table + 
+                inode_offset / sbi->s_inodes_per_group
+        block_off = inode_offset % EXT2_INODES_PER_BLOCK(this_fs);
+
+最后， 就是读取该块， 并加上block_off的偏移值， 就找着了相对应的inode结构体。 整体代码如下：
+
+static struct ext2_inode * get_inode (int inr)
+{
+        struct ext2_group_desc *desc;
+        struct cache_struct *cs;
+        uint32_t inode_group, inode_offset;
+        uint32_t block_num, block_off;
+        
+        inr--;
+        inode_group  = inr / EXT2_INODES_PER_GROUP(this_fs);
+        inode_offset = inr % EXT2_INODES_PER_GROUP(this_fs);
+        desc = ext2_get_group_desc (this_fs, inode_group);
+        if (!desc)
+                return NULL;
+
+        block_num = desc->bg_inode_table + 
+                inode_offset / EXT2_INODES_PER_BLOCK(this_fs);
+        block_off = inode_offset % EXT2_INODES_PER_BLOCK(this_fs);
+        
+        cs = get_cache_block(this_fs, block_num);
+        
+        return cs->data + block_off * EXT2_SB(this_fs)->s_inode_size;
+}
+
+最后， 就如supber block有一个与其对应的内存版， inode也有， 一般就叫做inode。 它除了包含那些文件的种种信息外， 还包含一个很重要的域， 那就是inr。 因为ext2_inode是没有这个域的， 因此， 这个域就显得很重要。
+
+至此， EXT2文件系统中所有的数据结构都叙述完了， 接下来， 将要处理很具体的东西了， 如， 如何打开一个文件， 如何写一个文件等。
+
+7.3 打开文件
+用户程序是通过路径找到相应的文件的， 如 open("/home/Aleax/project/thunix/README")。 但是， EXT2文件系统内部却是用inode来表示一个文件的， 如何把一个路径转换到最终我们所要的文件的inode结构呢？ 
+
+原理很简单， 主要就是一个循环， 逐一分解路径的每一个部分（分界符是/)。
+所以， 大概可以简写如下：
+
+struct inode *namei(struct fstk *fs, const char *name)
+{
+        struct inode *parent;
+        char part[256];
+        char *p;
+
+        if (*name == '/') {
+                inode = ext2_iget_root();
+                while(*name == '/')
+                        name++;
+        } else {
+                inode = this_dir->dd_dir->inode; /* 这个主要是为了实现相对路径的搜索， 这里不详谈 */
+        }
+        parent = inode;
+        
+        while (*name) {
+                p = part;
+                while(*name && *name != '/')
+                        *p++ = *name++;
+                *p = '\0';
+                inode = ext2_iget(part, parent);
+                if (!inode)
+                        return NULL;
+                parent = inode;
+                if (! *name)
+                        break;
+                while(*name == '/')
+                        name++;
+        }
+        
+        return inode;
+}
+
+代码很简单， 正如你所见， 真正作事的函数也就只有一个:ext2_iget。 参数有两个， 一个是指向上一级目录的节点指针， 二是文件名。函数实现如下：
+
+static struct inode *ext2_iget(char *dname, struct inode *parent)
+{
+        struct ext2_dir_entry *de;
+        
+        de = ext2_find_entry(dname, parent);
+        if (!de)
+                return NULL;
+        
+        return ext2_iget_by_inr(de->d_inode);
+}
+
+
+现来看第一个函数， ext2_find_entry， 主要作用是在一个目录下找一个文件， 如找着了， 则返回相应的目录项， 若没， 就返回null。 总的来说， 就是一个循环的过程， 一一遍历该目录下的目录项， 并与传参进来的文件名做对比， 如找着了， 就返回其目录项， 若到最后也没找着， 就返回NULL， 说明没有找着。代码简要实现如下：
+
+static struct ext2_dir_entry * ext2_find_entry(const char *dname, 
+                                               struct inode *inode)
+{
+        uint32_t block;
+        int i = 0;
+        int index = 0;
+        struct ext2_dir_entry *de;
+        struct cache_struct *cs;
+                
+        if (!(block = bmap(this_fs, inode, index++)))
+                return NULL;
+        cs = get_cache_block(this_fs, block);
+        de = (struct ext2_dir_entry *)cs->data;
+        
+        while(i < (int)inode->size) {
+		if ((char *)de >= (char *)cs->data + inode->blksize) {
+			if (!(block = bmap(this_fs, inode, index++)))
+                                return NULL;
+                        cs = get_cache_block(this_fs, block);
+                        de = (struct ext2_dir_entry *)cs->data;
+		}
+                if (ext2_match_entry(dname, de))
+                        return de;
+
+                i += de->d_rec_len;
+                de = ext2_next_entry(de);
+        }
+        
+        return NULL;
+}
+
+现假设ext2_dir_entry返回非NULL， 则表明找着了访文件， 并读取该目录项的d_inode， 就得知了该文件所对就的节点号， 就如前面所讲， 有了节点号， 也就不难找着其节点了。所以， 根据上面的, ext2_iget_by_inr, 将会很简单：
+
+static struct inode *ext2_iget_by_inr(uint32_t inr)
+{
+        struct ext2_inode *e_inode;
+        struct inode *inode;
+
+	e_inode = get_inode(inr);
+        inode = fstk_malloc(sizeof(*inode));
+        if (!inode) {
+                malloc_error("inode structure");
+                return NULL;
+        } 
+        fill_inode(inode, &e_inode);  /* 主要是做一些拷贝 */
+        inode->ino = inr;
+                
+        return inode;
+}
+
+到此， 就完成了由路径到inode的转换。
+
+但是， 在内核中， 一个被打开的文件都有一个file结构体与之对应。 这个结构体可以很简单， 比如像下面所示：
+struct file {
+	__u32 offset;
+	struct inode *inode;
+};
+
+是的， 一般来说， file结构体里面比较关心的域就这么两个， 第一个offset, 指点了从哪开始读（或写）， 我们常用的lseek函数就是用于修改此值， 因此， lseek的实现将是很简单：
+__u32 fstk_lseek(struct file *file, int off, int mode)
+{
+        if (mode == SEEK_CUR)
+                file->offset += off;
+        else if (mode == SEEK_END)
+                file->offset = file->inode->size + off;
+        else if (mode == SEEK_SET)
+                file->offset = off;
+        else
+                file->offset = -1;
+        return file->offset;
+}
+
+第二个域自然得是inode， 表示我们打开的是哪个文件。
+所以， open函数可是简写如下：
+
+struct file *open(const char *filename)
+{
+	struct file *file = zalloc(...);
+
+	file->inode = namei(filename);
+	return file;
+｝
+
+注， 我们这里并没有像UNIX操作系统这样设计open函数， 因为在unix中， open返回的是一个数值， 叫做文件扫描符， 用于表示一个被打开的文件。该文件被其打开的进程所有。 因此， 不同的进程打开同一个文件， 甚至是同一个进程打开同一个文件， 将会产生多个fd。 但他们指向的其实都是同一个file结构。 因为我们这里还没曾涉及到进程， 也就没有返回一个fd， 相应的， 我们直接返回file。
+
+7.5 读文件 
+根据上面所述， 我们的read函数的将是如下：
+
+int ext2_read(struct file* file, void *buf, int blocks)
+{
+        struct inode *inode = file->inode;
+        struct fstk *fs = file->fs;
+        uint32_t index = file->offset >> fs->block_shift;
+        uint32_t block;
+                
+        while (blocks--) {
+                if (!(block = bmap(fs, inode, index++))) {
+                        printf("WARNING: something wrong happened at bmap, "
+                               "maybe your fs is corrupted\n");
+                        return -1;
+                }
+                
+                block_read(fs, buf, block, 1);
+                buf += inode->blksize;
+        }
+        
+        return blocks *  (1 << fs->block_shift);
+}
+
+read函数的原理很简单， 定位到相应的index块， 再通过bmap返回其块的物理地址。 最后用磁盘的读驱动函数读取该块的数据。 就是这么一个过程。
+
+7.4 写文件
+文件的写和上面的读过程其实是类似的， 但唯一一个很复杂的就是， 你得分配一个新的空闲的块给该文件写， 这就得处理如何分配块的问题了。
+最简单的方式就是， 使用一个全局变量， 如start， 初始值为0（但事实上不是， 因为EXT2大概会预留5%的块）， 分配函数就从start开始， 每分配一个， 就置1， 并使start＋1。 每空出一个块的时候， 如被空出的块比start低， 就把它赋值给start。 所以，可以简写如下：
+
+__u32 block_alloc(void)
+{
+	while(test(start))
+		start++;
+
+	set(start++);
+
+	retrun start - 1;
+}
+
+再获得一个块之后， 我们要把它和像上面的bmap函数一个， 建立起一个映射关系。 可以通过bmap实现， 只要设置一个flag就行， 若create flag， 若置1， 就会建立映射关系。 如没， 就只读。 
+因此， write可以实现如下：
+
+int ext2_write(struct file* file, void *buf, int blocks)
+{
+        struct inode *inode = file->inode;
+        struct fstk *fs = file->fs;
+        uint32_t index = file->offset >> fs->block_shift;
+        uint32_t block;
+	int create = 1;
+                
+        while (blocks--) {
+                block = bmap(fs, inode, index++, create)
+                block_write(fs, buf, block, 1);
+                buf += inode->blksize;
+        }
+        
+        return blocks *  (1 << fs->block_shift);
+}
+
+7.5 关文件
+close一个文件其实再简单不过了， 只要把在打开文件时所分配的资源都释放掉就行了。
+
+void ext2_close(struct file *file）
+{
+	if (file) 
+		free(file);
+}
+
+
+7.6 小结
+在这一节中， 给出了一个ext2文件系统简陋但完整的实现。这一章的结束， 也就代表着这论文的结束。 不过， 我想， 我若还有时间， 将有可能在之后加上vfs, 进程， 内存管理等这些东西， 使得thunix， 以及这论文更完善下。
