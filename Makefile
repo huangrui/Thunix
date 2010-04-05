@@ -17,7 +17,7 @@ KERNEL_OBJS = boot/head.o init/init.o kernel/kernel.o fs/ext2_fs.o
 	${CC} -c -o $*.o $<
 
 
-all: thunix.img
+all: thunix.img doc
 
 thunix.img: boot.img kernel.img
 	cat boot.img kernel.img > thunix.img
@@ -39,6 +39,8 @@ boot.img: boot/bootsect.o
 kernel.img: ${KERNEL_OBJS}
 	${LD} ${LDFLAGS} -e pm_mode -Ttext 0x0000 -o $@ ${KERNEL_OBJS}
 
+doc:
+	(cd doc; make)
 
 backup: clean
 	(cp thunix.img ./image)
@@ -53,7 +55,7 @@ clean:
 	(cd init; make clean)
 	(cd kernel; make clean)
 	(cd fs; make clean)
-
+	(cd doc; make clean)
 
 dep:
 	(cd kernel; make dep)
