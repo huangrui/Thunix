@@ -129,4 +129,8 @@ void strcpy(char *dst, const char *src)
 	while (*src) 
 		*dst++ = *src++;
 }
-等等。介于本章不是整个C库的实现， 所以，就例举到此。 关于更多的库函数的实现， 可参考glibc或是相应的书籍， 如 The Standard C Library.
+等等。介于本章不是整个C库的实现， 所以，就例举到此。 关于更多的库函数的实现， 可参考glibc[Glibc]或是相应的书籍， 如 [Plauger 1991]The Standard C Library.
+
+
+
+

@@ -1,0 +1,28 @@
+参考文献
+
+[Bach 1986] M. Bach. The Design of the UNIX Operating System. Prentice Hall, 1986. 
+[BIOS INT] BIOS interrupt call. http://en.wikipedia.org/wiki/BIOS_interrupt_call. Wiki page
+[Daniel 2005] Daniel P. Bovet, Marco Cesati. Understanding the Linux Kernel, Third Edition - O'Reilly Media
+[FDC spec] 82077AA CHMOS SINGLE-CHIP FLOPPY DISK CONTROLLER， http://www.osdever.net./documents/82077AA_FloppyControllerDatasheet.pdf. Intel Corp
+[Glibc] GNU C Library. http://www.gnu.org/software/libc/. GNU Project
+[GRUB] GNU GRUB bootloader. http://www.gnu.org/software/grub. GNU Project
+[INT 0x10] BIOS interrupt 0x10. http://en.wikipedia.org/wiki/INT_10. Wiki page
+[INT 0x13] BIOS interrupt 0x10. http://en.wikipedia.org/wiki/INT_13. Wiki page
+[Intel Manual]  Intel® 64 and IA-32 Architectures Software Developer's Manual.
+	Intel® 64 and IA-32 Architectures Software Developer's Manual Volume 1: Basic Architecture
+	Intel® 64 and IA-32 Architectures Software Developer's Manual Volume 2A: Instruction Set Reference, A-M
+	Intel® 64 and IA-32 Architectures Software Developer's Manual Volume 2B: Instruction Set Reference, N-Z
+	Intel® 64 and IA-32 Architectures Software Developer's Manual Volume 3A: System Programming Guide Part 1
+	Intel® 64 and IA-32 Architectures Software Developer's Manual Volume 3B: System Programming Guide Part 2
+	http://www.intel.com/products/processor/manuals/. Intel Corp.
+[LBA to CHS] chs translation. http://www.viralpatel.net/taj/tutorial/chs_translation.php
+[make] GNU Make. http://www.gnu.org/software/make. GNU Project
+[osdever] osdever.net. http://www.osdever.net. osdever.net
+[osdev] osdever.org. http://www.osdev.org. osdev.org
+[PIC spec] The Intel 8259A Programmable Interrupt Controller, http://bochs.sourceforge.net/techspec/intel-8259a-pic.pdf.gz. Intel Corp.
+[PIT] Programmable_Interval_Timer, http://wiki.osdev.org/Programmable_Interval_Timer. osdev.org
+[PIT spec] 8253/54 Intel spec, http://www.osdever.net/documents/8253.pdf. Intel Corp.
+[Plauger 1991] P.J. Plauger. The Standard C Library. Prentice Hall, 1991. 
+[Rémyi] Rémyi card, Theodore Ts'o, Stephen Tweedie.  Design and Implementation of the Second Extended Filesystem. http://e2fsprogs.sourceforge.net/ext2intro.html
+[Scancode set]keyboard scancode set, http://www.win.tue.nl/~aeb/linux/kbd/scancodes-10.html
+[Syslinux] H.Peter.Anvin. http://syslinux.zytor.com. The Syslinux Project

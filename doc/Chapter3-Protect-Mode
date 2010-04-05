@@ -4,7 +4,7 @@
 
 这是我采用保护模式的原因之一， 再者就是学习保护模式对于今后对操作系统的学习有很大的帮助， 毕竟对于系统级的编程来说， 底层就是王道。
 
-保护模式虽然很强大， 但由于其直接架构于CPU之后， 更者几乎没有什么好的中文资料， 再者学校开设的都是16汇编， 所以， 仍有很多人不知道保护模式或是觉得很难学。 但其实， Intel官方给出了有关保护模式相当详细的资料， 它们是：
+保护模式虽然很强大， 但由于其直接架构于CPU之后， 更者几乎没有什么好的中文资料， 再者学校开设的都是16汇编， 所以， 仍有很多人不知道保护模式或是觉得很难学。 但其实， Intel官方给出了有关保护模式相当详细的资料[Intel Manual]， 它们是：
 Intel® 64 and IA-32 Architectures Software Developer's Manual Volume 1: Basic Architecture
 Intel® 64 and IA-32 Architectures Software Developer's Manual Volume 2A: Instruction Set Reference, A-M
 Intel® 64 and IA-32 Architectures Software Developer's Manual Volume 2B: Instruction Set Reference, N-Z
@@ -131,3 +131,7 @@ pm_mode:
 
 3.6 小结
 接下来， 我们就会跳到init函数了， 这是一个C函数， 也即代表了我们将要进入C的世界了！
+
+
+
+
