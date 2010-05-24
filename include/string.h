@@ -72,7 +72,7 @@ static void *memset(void *s, int c, size_t count)
 
 static void *memset_word(void *s, unsigned short word, size_t count)
 {
-        char *xs = s;
+        unsigned short *xs = (unsigned short *)s;
   
         while (count--)
                 *xs++ = word;

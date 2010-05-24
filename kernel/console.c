@@ -10,7 +10,7 @@
  */
 
 #include <console.h>
-/*#include <string.h>*/
+#include <string.h>
 #include <asm/io.h>
 #include <asm/system.h>
 /*#include <keyboard.h>*/
@@ -34,6 +34,7 @@ static unsigned short video_erase_char;
 
 static void sysbeep(void);
 
+extern int printk(char *fmt, ...);
 
 static inline void gotoxy(unsigned int new_x, unsigned int new_y)
 {
@@ -78,27 +79,14 @@ static void scrup(void)
                 pos += video_size_row;
                 scr_end += video_size_row;
                 if (scr_end > video_mem_end) {
-                        __asm__("cld\n\t"
-                                "rep\n\t"
-                                "movsl\n\t"
-                                "movl video_num_columns,%1\n\t"
-                                "rep\n\t"
-                                "stosw"
-                                ::"a" (video_erase_char),
-                                "c" ((video_num_lines-1)*video_num_columns>>1),
-                                 "D" (video_mem_start),
-                                "S" (origin) );
+			memcpy((void *)video_mem_start, origin, (video_num_lines - 1) * video_size_row);
                         scr_end -= origin-video_mem_start;
                         pos -= origin-video_mem_start;
                         origin = video_mem_start;
-                } else {
-                        __asm__("cld\n\t"
-                                "rep\n\t"
-                                "stosw"
-                                ::"a" (video_erase_char),
-                                 "c" (video_num_columns),
-                                "D" (scr_end-video_size_row) );
-                }
+		}
+
+		/* erase the list line */
+		memset_word((void *)(scr_end - video_size_row), video_erase_char, video_num_columns);
                 set_origin();
                 
         } else {
@@ -419,7 +407,6 @@ static void sysbeep(void)
  * Following functions shoud be in lib dir but not created yet, 
  * so be here now. 
  */
-extern int printk(char *fmt, ...);
 int puts(char *s)
 {
         return printk("%s",s);
