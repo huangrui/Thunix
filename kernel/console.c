@@ -63,6 +63,9 @@ void cls(void)
         for (; i < video_size_all/2; i++ ) {
                 con_write((char *)&c, 1);
         }
+
+	/* goto the begining of the screen after the cls operation */
+	gotoxy(0,0);
         
 }
 
