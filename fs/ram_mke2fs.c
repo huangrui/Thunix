@@ -16,9 +16,8 @@
 
 #include <fs_ext2.h>
 #include <thunix.h>
-
-extern unsigned long ram_start;
-extern unsigned long ram_end;
+#include <rd.h>
+#include <string.h>
 
 
 void ram_ext2_init_super_block()
@@ -95,7 +94,7 @@ void ram_ext2_init_root_inode()
         inode_table = ram_start + EXT2_BLOCK_SIZE * 10;
         
         root_inode = (struct ext2_inode *)inode_table + (ROOT_INODE - 1) ;
-        _memset(root_inode, 0, sizeof (struct ext2_inode));
+        memset(root_inode, 0, sizeof (struct ext2_inode));
 
         root_inode->i_size = 0x400;  /* 1K */
         root_inode->i_links_count = 3;
@@ -148,12 +147,12 @@ void ram_mke2fs()
         block = root_inode->inode.i_block[0];
         block_buffer = (void *)(ram_start + EXT2_BLOCK_SIZE * block);
         
-        _memcpy(block_buffer, &root, EXT2_DIR_REC_LEN(1));
+        memcpy(block_buffer, &root, EXT2_DIR_REC_LEN(1));
         block_buffer += EXT2_DIR_REC_LEN(1);
 
-        _memcpy(block_buffer, &root_dot_dot, EXT2_DIR_REC_LEN(1));
+        memcpy(block_buffer, &root_dot_dot, EXT2_DIR_REC_LEN(1));
         block_buffer += EXT2_DIR_REC_LEN(2);
 
-        _memcpy(block_buffer, &lost, EXT2_DIR_REC_LEN(10));
+        memcpy(block_buffer, &lost, EXT2_DIR_REC_LEN(10));
 
 }

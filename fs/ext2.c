@@ -5,79 +5,18 @@
  */
 
 #include <stdarg.h>
-//#include <string.h>
+#include <string.h>
 #include <fs_ext2.h>
 #include <thunix.h>
 
 
 extern int vsprintf (char *buf, const char *fmt, va_list args);
 
-
-char * _strcpy (char *dest, const char *src)
-{
-  char *p = dest;
-
-  while ((*p++ = *src++) != '\0')
-    ;
-
-  return dest;
-}
-
-
-int _strcmp(const char *s1, const char *s2)
-{
-  while ((*s1 == *s2) && *s1 != '\0') {
-    s1++;
-    s2++;
-  }
-  
-  return (*s1 - *s2);
-}
-
-char *_strchr (const char *s, int c)
-{
-        while (*s) {
-                if (*s == c)
-                        return (char *) s;
-                s++;
-        }
-        
-        return (void *)0;
-}
-
-void * _memcpy(void *dest, const void *src, int count)
-{
-	char *tmp = dest;
-	const char *s = src;
-
-	while (count--)
-		*tmp++ = *s++;
-}
-
 void * copy_block(void *dest, const void *src)
 {
-        _memcpy(dest, src, EXT2_BLOCK_SIZE);
+        memcpy(dest, src, EXT2_BLOCK_SIZE);
 }
 
-
-
-int _strlen(const char *s)
-{
-	const char *sc;
-
-	for (sc = s; *sc; ++sc)
-		/* nothing */;
-	return sc - s;
-}
-
-void * _memset(void *s, int c, int count)
-{
-	char *xs = s;
-
-	while (count--)
-		*xs++ = c;
-	return s;
-}
 int is_print(char c)
 {
         return ((c >= '!') && (c <= '~') ); 

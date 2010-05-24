@@ -7,6 +7,7 @@
 
 #include <thunix.h>
 #include <fs_ext2.h>
+#include <string.h>
 
 
 static int _bmap(struct m_inode * inode,int block,int create)
@@ -123,7 +124,7 @@ static void ext2_read_inode (struct m_inode * inode)
 {
         struct ext2_inode *raw_inode = ext2_get_inode (inode->i_num);
 
-        _memcpy (&inode->inode, raw_inode, sizeof(struct ext2_inode));
+        memcpy (&inode->inode, raw_inode, sizeof(struct ext2_inode));
 }
 
 
@@ -131,7 +132,7 @@ static void ext2_write_inode (struct m_inode * inode)
 {
         struct ext2_inode *raw_inode = ext2_get_inode (inode->i_num);
         
-        _memcpy (raw_inode, &inode->inode, sizeof(struct ext2_inode));
+        memcpy (raw_inode, &inode->inode, sizeof(struct ext2_inode));
 }
 
 #ifdef RAM_EXT2_FS
@@ -160,7 +161,7 @@ struct m_inode * ext2_iget (int inr)
            space (just for a pointer to inode).
            
            so the follwing instruction :
-           _memset(inode, 0, sizeof (struct m_inode));
+           memset(inode, 0, sizeof (struct m_inode));
            will cover others data, then break into some
            unknow conditions .
 
@@ -180,7 +181,7 @@ struct m_inode * ext2_iget (int inr)
 
 
         EXT2_DEBUG();
-        _memset (&inode, 0, sizeof (struct m_inode));
+        memset (&inode, 0, sizeof (struct m_inode));
         inode->i_num = inr;
         ext2_read_inode (&inode);
 

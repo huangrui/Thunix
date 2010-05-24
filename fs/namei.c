@@ -10,6 +10,7 @@
  */
 #include <thunix.h>
 #include <fs_ext2.h>
+#include <string.h>
 
 
 /*
@@ -25,7 +26,7 @@ static inline int ext2_match_entry (int len, const char * const name,
 		return 0;
 	if (!de->inode)
 		return 0;
-	return !_strcmp(name, de->name, len);
+	return !strncmp(name, de->name, len);
 }
 
 
@@ -105,7 +106,7 @@ void ext2_add_entry (struct m_inode *dir_inode, struct ext2_dir_entry *dir)
                 if (de->name == NULL || de->inode == 0)
                         break;
 
-                if ( !_strcmp(de->name, dir->name) ) {
+                if ( !strcmp(de->name, dir->name) ) {
                         printk("%s: already exist\n", dir->name);
                         return;
                 }
@@ -116,9 +117,9 @@ void ext2_add_entry (struct m_inode *dir_inode, struct ext2_dir_entry *dir)
         }
 
         de->inode = dir->inode;
-        de->name_len = _strlen(dir->name);
+        de->name_len = strlen(dir->name);
         de->rec_len = EXT2_DIR_REC_LEN(de->name_len);
-        _strcpy(de->name, dir->name);
+        strcpy(de->name, dir->name);
 
         
         EXT2_DEBUG(printk("the new added entry's name is %s\n",de->name));
@@ -151,13 +152,13 @@ struct m_inode * ext2_namei(char *pathname)
                 p = pathname;
                 while (*pathname!='/'&&*pathname)
                         pathname++;
-                _memcpy (thisname, p, pathname - p);
+                memcpy (thisname, p, pathname - p);
                 thisname[pathname-p] = '\0';
                 
                 EXT2_DEBUG(printk("thisname %s\n",thisname));
 
                 
-                if (de = ext2_find_entry(working_inode, thisname, _strlen(thisname))) {
+                if (de = ext2_find_entry(working_inode, thisname, strlen(thisname))) {
                         inode = ext2_iget(de->inode);
                         ext2_iput(working_inode);
                         working_inode = inode;

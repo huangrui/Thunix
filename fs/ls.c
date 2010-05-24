@@ -36,7 +36,7 @@ void ls(char *pathname,char *arg)
                 }
                 
                 
-                if (_strcmp(arg, "-l") == 0) {
+                if (strcmp(arg, "-l") == 0) {
                         printk("%-16s%d\n",de->name,de->inode);
                         goto next;
                 }

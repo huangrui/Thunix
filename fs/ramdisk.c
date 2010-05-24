@@ -1,19 +1,20 @@
 #include <fs_ext2.h>
 #include <thunix.h>
-//#include <string.h>
+#include <string.h>
+#include <rd.h>
 
 unsigned long ram_start;
-unsigned long ram_end;
+static unsigned long ram_end;
 
 
 void inline rd_read(void *mem, void *ram, int block)
 {
-        _memcpy(mem, ram, block << 10);
+        memcpy(mem, ram, RD_BLOCK_SIZE);
 }
 
 void inline rd_write(void *ram, void *mem, int block)
 {
-        _memcpy(ram, mem, block << 10);
+        memcpy(ram, mem, RD_BLOCK_SIZE);
 }
 
 void inline rd_read_block(void *mem, void *ram)
@@ -35,19 +36,34 @@ void * bread (unsigned int block)
         
         return (void*)ram;
 }
+
+void bwrite(unsigned int block, char *buf)
+{
+	unsigned long ram;
+	ram = ram_start + block * EXT2_BLOCK_SIZE;
+
+	memcpy(ram, buf, EXT2_BLOCK_SIZE);
+}
 #else
 void * bread (unsigned int block)
 {
-        void *block_buffer[1024];
+        static void block_buffer[1024];
         void *ram;
         
-        //EXT2_DEBUG();
-
-        ram = ram_start + block * EXT2_BLOCK_SIZE;
+        ram = ram_start + block * RD_BLOCK_SIZE;
         rd_read_block(block_buffer,ram);
         
         return block_buffer;
 }
+
+void bwrite(unsigned int block, char *buf)
+{
+	unsigned long ram;
+	ram = ram_start + block * RD_BLOCK_SIZE;
+
+	rd_write_block((void *)ram, buf);
+}
+
 #endif /* bread */
 
 

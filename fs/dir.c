@@ -9,6 +9,7 @@
  *           Aleaxander@gmail.com
  */
 
+#include <string.h>
 #include <thunix.h>
 #include <fs_ext2.h>
 
@@ -23,12 +24,12 @@ void ext2_make_empty_dir(struct m_inode *dir, struct m_inode *parent)
         dot.inode = dir->i_num;
         dot.name_len = 1;
         dot.rec_len = EXT2_DIR_REC_LEN(1);
-        _strcpy(dot.name, ".");
+        strcpy(dot.name, ".");
 
         ddot.inode = parent->i_num;
         ddot.name_len = 2;
         ddot.rec_len = EXT2_DIR_REC_LEN(2);
-        _strcpy(ddot.name, "..");
+        strcpy(ddot.name, "..");
 
         ext2_add_entry(dir, &dot);
         ext2_add_entry(dir, &ddot);
@@ -57,7 +58,7 @@ int  ext2_dir_empty(struct m_inode *dir)
                         dir_block ++;
                 }
                 
-                if (_strcmp(de->name, ".") || _strcmp(de->inode, "..") )
+                if (strcmp(de->name, ".") || strcmp(de->inode, "..") )
                         return 0;
                 i ++;
                 if ( i > 2)
@@ -83,7 +84,7 @@ void mkdir(char *pathname)
          */
 
         dir_name = pathname;
-        file_name = _strchr(pathname,'/');
+        file_name = strchr(pathname,'/');
         if (! file_name) {
                 printk("error: please input the absolute pathname\n");
                 return ;
@@ -103,9 +104,9 @@ void mkdir(char *pathname)
         
         
         entry.inode = inode->i_num;
-        entry.name_len = _strlen(file_name);
+        entry.name_len = strlen(file_name);
         entry.rec_len = EXT2_DIR_REC_LEN(entry.name_len);
-        _strcpy(entry.name, file_name);
+        strcpy(entry.name, file_name);
 
         EXT2_DEBUG(printk("the new entry's name is %s\n",entry.name));
 
