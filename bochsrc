@@ -9,8 +9,8 @@ megs: 32
 #gdbstub: enabled=1, port=1234, text_base=0, data_base=0, bss_base=0
 
 # filename of ROM images
-romimage: file=/usr/lib/bochs/bios/BIOS-bochs-latest
-vgaromimage: file=/usr/lib/bochs/bios/VGABIOS-lgpl-latest
+romimage: file=/usr/share/bochs/BIOS-bochs-latest, address=0xf0000
+vgaromimage: file=/usr/share/bochs/VGABIOS-lgpl-latest
 
 # what disk images will be used 
 floppya: 1_44=./thunix.img, status=inserted
