@@ -103,10 +103,10 @@ void do_timer(void)
 
 void timer_init(int hz)
 {
-  unsigned int divisor = 1193180/hz;
-  outb(0x36, 0x43);
-  outb(divisor&0xff, 0x40);
-  outb(divisor>>8, 0x40);
-  set_trap_gate(0x20,timer_interrupt);
-  outb(inb(0x21)&0xfe, 0x21);
+	unsigned int divisor = 1193180/hz;
+	outb(0x36, 0x43);
+	outb(divisor&0xff, 0x40);
+	outb(divisor>>8, 0x40);
+	set_trap_gate(0x20,timer_interrupt);
+	outb(inb(0x21)&0xfe, 0x21);
 }
