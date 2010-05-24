@@ -7,7 +7,7 @@
 volatile unsigned long timer_ticks = 0;
 volatile unsigned long count_down = 0;
 
-extern timer_interrupt(void);
+extern void timer_interrupt(void);
 
 //extern current_DOR;
 

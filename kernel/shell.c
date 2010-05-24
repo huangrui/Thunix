@@ -11,6 +11,7 @@
 #include <thunix.h>
 #include <time.h>
 #include <console.h>
+#include <string.h>
 
 #define BUFFER_SIZE 512
 

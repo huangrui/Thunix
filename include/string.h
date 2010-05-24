@@ -7,7 +7,7 @@
 #define NULL ((void *) 0)
 #endif
 
-int strcmp(const char *s1, const char *s2)
+static int strcmp(const char *s1, const char *s2)
 {
         while ((*s1 == *s2) && *s1 != '\0') {
                 s1++;
@@ -18,7 +18,7 @@ int strcmp(const char *s1, const char *s2)
 }
 
 
-char *strcpy(char *dest, const char *src)
+static char *strcpy(char *dest, const char *src)
 {
 	char *tmp = dest;
 
@@ -28,7 +28,7 @@ char *strcpy(char *dest, const char *src)
 }
 
 
-char *strcat(char *dest, const char *src)
+static char *strcat(char *dest, const char *src)
 {
 	char *tmp = dest;
 
@@ -40,7 +40,7 @@ char *strcat(char *dest, const char *src)
 }
 
 
-size_t strlen(const char *s)
+static size_t strlen(const char *s)
 {
 	const char *sc;
 
@@ -50,7 +50,7 @@ size_t strlen(const char *s)
 }
 
 
-char *strchr (const char *s, int c)
+static char *strchr (const char *s, int c)
 {
         while (*s) {
                 if (*s == c)
@@ -61,7 +61,7 @@ char *strchr (const char *s, int c)
         return (void *)0;
 }
 
-void *memset(void *s, int c, size_t count)
+static void *memset(void *s, int c, size_t count)
 {
 	char *xs = s;
 
@@ -70,7 +70,7 @@ void *memset(void *s, int c, size_t count)
 	return s;
 }
 
-void *memset_word(void *s, unsigned short word, size_t count)
+static void *memset_word(void *s, unsigned short word, size_t count)
 {
         char *xs = s;
   
@@ -79,7 +79,7 @@ void *memset_word(void *s, unsigned short word, size_t count)
         return s;
 }
 
-void *memcpy(void *dest, const void *src, size_t count)
+static void *memcpy(void *dest, const void *src, size_t count)
 {
 	char *tmp = dest;
 	const char *s = src;
@@ -90,7 +90,7 @@ void *memcpy(void *dest, const void *src, size_t count)
 }
 
 
-void *memmove(void *dest, const void *src, size_t count)
+static void *memmove(void *dest, const void *src, size_t count)
 {
 	char *tmp;
 	const char *s;
@@ -112,7 +112,7 @@ void *memmove(void *dest, const void *src, size_t count)
 }
 
 
-int memcmp(const void *cs, const void *ct, size_t count)
+static int memcmp(const void *cs, const void *ct, size_t count)
 {
 	const unsigned char *su1, *su2;
 	int res = 0;

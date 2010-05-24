@@ -43,7 +43,7 @@ void * ext2_read_block_bitmap(unsigned int block_group)
 	desc = ext2_get_group_desc (block_group);
 	if (!desc)
 		goto error_out;
-	bitmap = EXT2_BITMAP_BUFFER + (block_group << 1) * EXT2_BLOCK_SIZE;
+	bitmap = (void *)(EXT2_BITMAP_BUFFER + (block_group << 1) * EXT2_BLOCK_SIZE);
 	if (!bitmap)
 		ext2_error ("read_block_bitmap",
 			    "Cannot read block bitmap - "

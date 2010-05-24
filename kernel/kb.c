@@ -32,6 +32,7 @@
 #include <asm/io.h>
 #include <asm/system.h>
 #include <keyboard.h>
+#include <console.h>
 #include <string.h>
 
 static unsigned char scancode;
@@ -125,7 +126,7 @@ static unsigned char ctl_map[256] = {
 
 
 extern void parse_command (char *);
-int index = 0;
+static int index = 0;
 char command_buffer[20] = {'\0',};
 
 
@@ -175,7 +176,7 @@ static void pln(void)
         index ++;
 
  skip:
-        con_write(&key,1);
+        con_write((char *)&key,1);
         
         if (key == '\n') {
                                 
@@ -360,7 +361,7 @@ void keyboard_interrupt ()
          */
         if (scancode == 0x4b) {
                 scancode = LF;
-                con_write(&scancode, 1);
+                con_write((char *)&scancode, 1);
                 goto end;
         }
                 

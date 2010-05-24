@@ -1,5 +1,5 @@
 AS	= as -Iinclude
-CC	= gcc -nostdinc -Iinclude #-Wall
+CC	= gcc -nostdinc -Iinclude -Wall -Wno-unused-function
 LD	= ld
 LDFLAGS = --oformat binary -N
 

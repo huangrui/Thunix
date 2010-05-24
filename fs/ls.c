@@ -1,5 +1,6 @@
 #include <fs_ext2.h>
 #include <thunix.h>
+#include <string.h>
 
 char dir[8] = "/usr";
 
