@@ -1,0 +1,15 @@
+#!/bin/bash
+
+#
+# Stupid fake auto configuration
+#
+
+echo -n "Checking if we are using SuSE linux..."
+if [ -e /etc/SuSE-release ]; then
+	if ! grep 'address=0xf0000' -q bochsrc; then
+		sed '/^romimage/s/$/, address=0xf0000/' -i bochsrc
+	fi
+	echo " Yes"
+else
+	echo " No"
+fi
