@@ -6,10 +6,9 @@
 
 echo -n "Checking if we are using SuSE linux..."
 if [ -e /etc/SuSE-release ]; then
-	if ! grep 'address=0xf0000' -q bochsrc; then
-		sed '/^romimage/s/$/, address=0xf0000/' -i bochsrc
-	fi
+	sed '/^romimage/s/$/, address=0xf0000/'  bochsrc.in > bochsrc
 	echo " Yes"
 else
+	cp bochsrc.in bochsrc
 	echo " No"
 fi
