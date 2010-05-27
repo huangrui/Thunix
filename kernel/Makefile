@@ -5,7 +5,7 @@ LDFLAGS = --oformat binary -N
 CPP	=gcc -E -nostdinc -I../include
 
 OBJS    = asm.o console.o kb.o mktime.o panic.o printk.o \
-	 timer.o traps.o vsprintf.o fd.o shell.o reboot.o halt.o
+	 timer.o traps.o vsprintf.o fd.o shell.o reboot.o halt.o hexdump.o
 
 
 kernel.o: ${OBJS}

@@ -180,19 +180,9 @@ void init(void)
         ram_mke2fs();
         printk("\t\t%s\n", ok);
         
-        printk("\n");
-        printk("\t**************************\n");
-        printk("\t*                        *\n");
-        printk("\t*   Welcome to Thunix    *\n");
-        printk("\t*                        *\n");
-        printk("\t**************************\n");
-        printk("\tType 'help' for more information\n");
-        printk("\n");
-
         /* Hope it quite safe now */
         sti();
         
-        shell_init();
 
 
 
@@ -252,7 +242,6 @@ void init(void)
 
 
 
-
 	/* 
          * the floppy driver is not ready , and i think....
 	 */
@@ -288,6 +277,17 @@ void init(void)
 #endif   
         
        
-        
+        printk("\n");
+        printk("\t**************************\n");
+        printk("\t*                        *\n");
+        printk("\t*   Welcome to Thunix    *\n");
+        printk("\t*                        *\n");
+        printk("\t**************************\n");
+        printk("\tType 'help' for more information\n");
+        printk("\n");
+
+       
+        shell_init();
+
         pause();    
 }
