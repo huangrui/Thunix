@@ -33,7 +33,6 @@
 
 
 
-extern int printk(char *fmt, ...);
 extern void panic(char *);
 
 extern unsigned long get_current_time(struct tm*);
