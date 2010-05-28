@@ -81,14 +81,14 @@ void ext2_free_block(unsigned int block)
  * get the specified goal block
  * if alread alloced find it by looking forward 
  */
-int ext2_grab_block( char *bitmap, unsigned int goal)
+int ext2_grab_block(char *bitmap, unsigned int goal)
 {
         if ( !ext2_test_bit(bitmap, goal) )
                 goto got_block;
 
         /* else looking forward */
         goal = find_first_zero (bitmap, goal + 1, EXT2_BLOCKS_PER_GROUP);
- got_block:
+got_block:
         return goal;
 }
 
@@ -118,4 +118,3 @@ int ext2_alloc_block ( unsigned int goal)
 
         return block;
 }
-                

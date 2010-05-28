@@ -222,6 +222,8 @@ void run_command(char *command, int argc, char **argv)
 
         else if ( is_command(command, "reboot") )
                 reboot ();
+	else if ( is_command(command, "debug") )
+		Debug();
         else
                 printk("unknown command, please type 'help' for more information\n");
 }

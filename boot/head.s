@@ -28,19 +28,6 @@ pm_mode:
 		movl	$(KERNEL_SECT-1)<<7,%ecx
 		rep
 		movsl
-                jmp     next
 
-
-/*
- * tmp_floppy_area is used by the floppy-driver when DMA cannot
- * reach to a buffer-block. It needs to be aligned, so that it isn't
- * on a 64kB border.
- */
-/*.globl tmp_floppy_area
-        .org 0x1000
-tmp_floppy_area:
-	.fill 1024,1,0
-  */      
-next:
                 call	init    # we count on it.
 

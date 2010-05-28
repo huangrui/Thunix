@@ -297,8 +297,6 @@ timer_interrupt:
               
 	iret
 
-
-/*
 .globl floppy_interrupt
 floppy_interrupt:
         pushl %eax
@@ -312,20 +310,7 @@ floppy_interrupt:
 	pushl %es
 	pushl %fs
 
-        movl $0x4142434445, %eax
-        pushl %eax
-        call printk
-        addl $4, %esp
-        
-	movb $0x20,%al		# EOI to interrupt controller #1
-	outb %al,$0x20
-
-      	xorl %eax,%eax
-	xchgl do_floppy,%eax
-	testl %eax,%eax
-	jne 1f
-	movl $unexpected_floppy_interrupt,%eax
-1:	call *%eax
+        call do_floppy
         
 	pop %fs
 	pop %es
@@ -339,4 +324,3 @@ floppy_interrupt:
 	popl %eax
               
 	iret
-        */

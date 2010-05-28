@@ -260,11 +260,15 @@ void init(void)
          * and i got no idea. Please FIX ME.
          *
          */
-        detect_floppy_drive();
+{
+	char *buf = (char *)0x10000;
+
+        //detect_floppy_drive();
         printk("floppy_interrupt addr:%08x\n",floppy_interrupt);
-        floppy_read(3, (char *)tmp_floppy_area, 2);
+        floppy_read(0, buf, 1);
         printk("returned but not sure read_ok\n");
-        printk("tmp_floppy_area:%08x\n",tmp_floppy_area);
+	hexdump(buf, 64);
+}
 #endif
 
 

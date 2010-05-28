@@ -39,4 +39,7 @@ extern unsigned long get_current_time(struct tm*);
 
 #define LOG_PRINT printk
 
+/* General debug function */
+extern void Debug(void);
+
 #endif /* thunix.h */
