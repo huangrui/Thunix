@@ -44,10 +44,8 @@ kernel.img: ${KERNEL_OBJS}
 doc:
 	(cd doc; make)
 
-backup: clean
-	(cp thunix.img ./image)
-	(rm -f thunix.img)
-	(cd ..; tar -cf /media/Soft/thunix/thunix-0.2-backup.tar thunix)
+release: clean
+	./release
 
 bochs:
 	bochs -qf bochsrc 
