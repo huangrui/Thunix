@@ -3,7 +3,7 @@ CC	= gcc -nostdinc -Iinclude -Wall -Wno-unused-function
 LD	= ld
 LDFLAGS = --oformat binary -N
 
-KERNEL_OBJS = boot/head.o init/init.o kernel/kernel.o fs/ext2_fs.o
+KERNEL_OBJS = boot/head.o init/init.o kernel/kernel.o fs/ext2_fs.o mm/mm.o
 
 .PHONY :clean backup
 
@@ -33,6 +33,8 @@ kernel/kernel.o:
 	(cd kernel; make)
 fs/ext2_fs.o:
 	(cd fs; make)
+mm/mm.o:
+	(cd mm; make)
 
 boot.img: boot/bootsect.o
 	${LD} ${LDFLAGS} -e start -Ttext 0x7c00 -o $@ $<
@@ -55,6 +57,7 @@ clean:
 	(cd init; make clean)
 	(cd kernel; make clean)
 	(cd fs; make clean)
+	(cd mm; make clean)
 	(cd doc; make clean)
 
 dep:

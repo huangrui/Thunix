@@ -12,6 +12,6 @@
 			# current process ldt
 .set GDT_SIZE, (32*GDT_ENTRIES)
 			# GDT length
-.set KERNEL_SECT, 72	# Kernel lenght, counted by sectors
+.set KERNEL_SECT, 99	# Kernel lenght, counted by sectors
 .set STACK_BOT, 0xa0000	# stack starts at 640K
 

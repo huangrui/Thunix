@@ -534,7 +534,7 @@ void floppy_init(void)
 }
 
 /* debug fd read */
-void Debug(void)
+void Debug_rd(void)
 {
 	char buf[512];
 

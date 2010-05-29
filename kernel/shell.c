@@ -190,7 +190,6 @@ void run_command(char *command, int argc, char **argv)
 		}
 	}
 
-
         else if ( is_command(command, "mkdir") ) {
                 if (argc < 2) {
                         printk("mkdir usage: please input at least one dir name\n");
@@ -204,9 +203,9 @@ void run_command(char *command, int argc, char **argv)
         
         else if ( is_command(command, "ls") ) {
                 if ( argc == 1) {
-                        ls ("/", "-l");
+                       ls ("/", "-l");
                 } else if (argc == 1) {
-                        ls(argv[1], 0);
+                       ls(argv[1], 0);
                 } else {
                         int i = 1;
                         while ( i < argc) {
@@ -222,8 +221,10 @@ void run_command(char *command, int argc, char **argv)
 
         else if ( is_command(command, "reboot") )
                 reboot ();
+#if 0
 	else if ( is_command(command, "debug") )
 		Debug();
+#endif
         else
                 printk("unknown command, please type 'help' for more information\n");
 }

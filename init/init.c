@@ -144,6 +144,8 @@ void init(void)
         struct tm time;
         
         cli();
+	
+	malloc_init();
         
         trap_init();
         con_init();        
