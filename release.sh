@@ -32,7 +32,7 @@ function build_clean()
 	echo "[ DONE ]"
 )
 
-rm -rf release && mkdir release 2>/dev/null
+[ ! -d release ] && rm -rf release && mkdir release
 cp ${tmp_dir}/{*.bz2,*.gz} release/
 rm -rf $tmp_dir
 
