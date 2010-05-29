@@ -5,7 +5,7 @@ LDFLAGS = --oformat binary -N
 
 KERNEL_OBJS = boot/head.o init/init.o kernel/kernel.o fs/ext2_fs.o mm/mm.o
 
-.PHONY :clean backup
+.PHONY :clean backup release
 
 
 
@@ -44,8 +44,8 @@ kernel.img: ${KERNEL_OBJS}
 doc:
 	(cd doc; make)
 
-release: clean
-	./release
+release: 
+	./release.sh
 
 bochs:
 	bochs -qf bochsrc 
