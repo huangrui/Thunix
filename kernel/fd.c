@@ -548,7 +548,7 @@ void Debug_rd(void)
 void Debug(void)
 {
         char str[512 * 10] = "hello word! This is just a floppy writing test";
-	char *buf = 0x800000;
+	char *buf = (char *)0x800000;
 	memcpy(buf, str, sizeof(str));
 
 	LOG("STRING addr: %p\n", str);

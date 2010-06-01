@@ -225,7 +225,7 @@ void run_command(char *command, int argc, char **argv)
 
         else if ( is_command(command, "reboot") )
                 reboot ();
-#if 1
+#if 0
 	else if ( is_command(command, "debug") )
 		Debug();
 #endif

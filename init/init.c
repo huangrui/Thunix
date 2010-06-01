@@ -1,4 +1,5 @@
-/*#include <string.h>*/
+#include <stdio.h>
+#include <string.h>
 #include <console.h>
 #include <asm/system.h>
 #include <asm/io.h>
@@ -6,17 +7,19 @@
 #include <timer.h>
 #include <time.h>
 #include <thunix.h>
-/*#include <sched.h>*/
-#include <rd.h>
-#include <fs_ext2.h>
+#include <tfs.h>
+#include <cache.h>
+#include <dirent.h>
 #include <fd.h>
+/*#include <sched.h>*/
+//#include <rd.h>
+//#include <fs_ext2.h>
 
 extern void trap_init(void);
 extern void con_init(void);
 extern void keyboard_init(void);
 extern void timer_init(int);
 extern long kernel_mktime(struct tm*);
-extern int  printk(char *fmt, ...);
 extern void timer_interrupt(void);
 extern void floppy_interrupt(void);
 //extern void rd_init(void);
@@ -142,6 +145,7 @@ void init(void)
         char ok[] = "[OK]";
         unsigned long startup_time;
         struct tm time;
+	struct tfs_sb_info *tfs_sbi;
         
         cli();
 	
@@ -165,6 +169,15 @@ void init(void)
         printk("%s", flp_msg);
         floppy_init();
         printk("\t\t%s\n", ok);
+
+	printk("mounting tfs image as root fs...");
+	tfs_sbi = tfs_mount();
+	printk("\t%s\n", ok);
+
+	printk("Cache system initialiaztion...");
+	cache_init(tfs_sbi);
+	printk("\t\t%s\n", ok);
+
 
 /*
         printk("%s", rd_msg);

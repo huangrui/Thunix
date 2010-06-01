@@ -8,7 +8,7 @@
 #include <stdio.h>
 #include <string.h>
 
-void hexdump(const void *data, int len)
+void hexdump(void *data, int len)
 {
 	int i = 0;
 	int index = 0;

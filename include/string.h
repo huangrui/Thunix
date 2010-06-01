@@ -2,6 +2,7 @@
 #define _STRING_H    1
 
 #include <types.h>
+#include <malloc.h>
 
 #ifndef NULL
 #define NULL ((void *) 0)
@@ -69,6 +70,26 @@ static char *strchr (const char *s, int c)
         }
         
         return (void *)0;
+}
+
+static char *strrchr (char *s, int c)
+{
+	char *end = s + strlen(s) - 1;
+
+	while (*end != c && end >= s) 
+		end--;
+	if (end < s)
+		return NULL;
+	return end;
+}
+
+static char *strdup(const char *str)
+{
+	char *s = malloc(strlen(str) + 1);
+	if (!s)
+		return s;
+	strcpy(s, str);
+	return s;
 }
 
 static void *memset(void *s, int c, size_t count)

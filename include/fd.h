@@ -59,13 +59,13 @@
 #define DMA_WRITE	0x4A//0x4A
 
 
-
-
 extern void floppy_interrupt(void);
 void do_fd_request(int, char*, int );
 
 void floppy_read(int, char *);
 void floppy_write(int, char *);
+void floppy_reads(int, char *, unsigned int);
+void floppy_writes(int, char *, unsigned int);
 void floppy_init(void);
 
 #endif

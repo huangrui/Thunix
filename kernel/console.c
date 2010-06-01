@@ -34,8 +34,6 @@ static unsigned short video_erase_char;
 
 static void sysbeep(void);
 
-extern int printk(char *fmt, ...);
-
 static inline void gotoxy(unsigned int new_x, unsigned int new_y)
 {
         if (new_x > video_num_columns || new_y >= video_num_lines)
@@ -79,7 +77,7 @@ static void scrup(void)
                 pos += video_size_row;
                 scr_end += video_size_row;
                 if (scr_end > video_mem_end) {
-			memcpy((void *)video_mem_start, origin, (video_num_lines - 1) * video_size_row);
+			memcpy((void *)video_mem_start, (const void *)origin, (video_num_lines - 1) * video_size_row);
                         scr_end -= origin-video_mem_start;
                         pos -= origin-video_mem_start;
                         origin = video_mem_start;

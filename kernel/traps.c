@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <asm/system.h>
 #include <asm/io.h>
 #include <thunix.h>
