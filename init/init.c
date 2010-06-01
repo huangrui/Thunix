@@ -140,12 +140,13 @@ char *flp_msg  = "Floppy initialization ...";
 //char *ram_mke2fs_msg = "Making Ram ext2 filesystem ...";
 
 
+struct tfs_sb_info *tfs_sbi;
+
 void init(void)
 {
         char ok[] = "[OK]";
         unsigned long startup_time;
         struct tm time;
-	struct tfs_sb_info *tfs_sbi;
         
         cli();
 	
@@ -178,6 +179,14 @@ void init(void)
 	cache_init(tfs_sbi);
 	printk("\t\t%s\n", ok);
 
+	printk("Cd into root... ");
+	this_dir = tfs_opendir(tfs_sbi, "/");
+	if (!this_dir) {
+		printf("cd into root dir failed!\n");
+	}
+	printk("\t\t\t%s\n", ok);
+
+	
 
 /*
         printk("%s", rd_msg);

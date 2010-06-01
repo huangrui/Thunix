@@ -422,7 +422,7 @@ static int floppy_rw(int sector, char *buf, int command)
         /* move head to the right track */
         if (!seek(track, head)) {
                 motor_off();
-                printk("floppy_rw: Error seeking to track\n");
+                printk("floppy_rw: Error seeking to track#%d\n", track);
                 return FALSE;
         }
                 
@@ -473,13 +473,13 @@ static int floppy_rw(int sector, char *buf, int command)
 
 
 /* Read ONE sector */
-void floppy_read(int sector, char * buf)
+void floppy_read(int sector, void * buf)
 {
         floppy_rw(sector, buf, FD_READ);
 }
 
 /* Write ONE sector */
-void floppy_write(int sector, char * buf)
+void floppy_write(int sector, void * buf)
 {
         floppy_rw(sector, buf, FD_WRITE);
 }
@@ -488,7 +488,7 @@ void floppy_write(int sector, char * buf)
  * The two following function handles multi-sectors reading
  * and writing.
  */
-void floppy_reads(int sector, char *buf, unsigned int sectors)
+void floppy_reads(int sector, void *buf, unsigned int sectors)
 {
 	while (sectors--) {
 		floppy_rw(sector++, buf, FD_READ);
@@ -496,7 +496,7 @@ void floppy_reads(int sector, char *buf, unsigned int sectors)
 	}
 }
 
-void floppy_writes(int sector, char *buf, unsigned int sectors)
+void floppy_writes(int sector, void *buf, unsigned int sectors)
 {
 	while (sectors--) {
 		floppy_rw(sector++, buf, FD_WRITE);

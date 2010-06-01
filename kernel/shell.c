@@ -14,6 +14,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <tfs.h>
 #include <hexdump.h>
 
 #define BUFFER_SIZE 512
@@ -151,9 +152,12 @@ static void date()
 
 
 extern void cls(void);
-//extern void ls(char *, char *);
 extern void reboot();
-//extern void mkdir(char *);
+extern void ls(struct tfs_sb_info *sbi, char *);
+extern void cd(struct tfs_sb_info *sbi, char *);
+extern void cp(struct tfs_sb_info *sbi, char *, char *);
+extern void cat(struct tfs_sb_info *sbi, char *);
+extern void mkdir(struct tfs_sb_info *sbi, char *);
 extern void halt(void);
 void run_command(char *command, int argc, char **argv)
 {
@@ -161,9 +165,16 @@ void run_command(char *command, int argc, char **argv)
         
         if ( is_command(command, "about")  )
                 about();
+		
+	else if ( is_command(command, "cat") )
+		cat(tfs_sbi, argv[1]);
+	else if ( is_command(command, "cd") )
+		cd(tfs_sbi, argv[1]);
 
         else if (is_command(command, "clear") )
                 cls();
+	else if (is_command(command, "cp") )
+		cp(tfs_sbi, argv[1], argv[2]);
 
         else if (is_command(command, "date") )
                 date();
@@ -191,33 +202,26 @@ void run_command(char *command, int argc, char **argv)
 	}
 
         else if ( is_command(command, "mkdir") ) {
-		;/*
-                if (argc < 2) {
-                        printk("mkdir usage: please input at least one dir name\n");
+                if (argc != 2) {
+                        printk("mkdir usage: mkdir dir\n");
                 } else {
-                        while (argc) {
-                                argc--;
-                                mkdir(argv[argc]);
-                        }
+			mkdir(tfs_sbi, argv[1]);	
                 }
-		*/
         }
         
         else if ( is_command(command, "ls") ) {
-		;/*
                 if ( argc == 1) {
-                       ls ("/", "-l");
+                       ls (tfs_sbi, "/");
                 } else if (argc == 1) {
-                       ls(argv[1], 0);
+                       ls(tfs_sbi, argv[1]);
                 } else {
                         int i = 1;
                         while ( i < argc) {
                                 printk("%s:\n", argv[i]);
-                                ls (argv[i], "-l");
+                                ls (tfs_sbi, argv[i]);
                                 i++;
                         }
                 }
-		*/
         }
 
         else if ( is_command(command, "version") )

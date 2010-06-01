@@ -6,7 +6,7 @@ CPP	=gcc -E -nostdinc -I../../include
 
 all: tfs.o #mktfs
 
-OBJS    = balloc.o cache.o dir.o file.o ialloc.o inode.o super.o tfs_diskio.o
+OBJS    = balloc.o cache.o dir.o file.o ialloc.o inode.o super.o tfs_diskio.o tfs_cmd.o
 
 
 tfs.o: ${OBJS} 
