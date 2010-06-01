@@ -545,7 +545,7 @@ void Debug_rd(void)
 }
 
 /* debug fd write */
-void Debug_wr(void)
+void Debug(void)
 {
         char str[512 * 10] = "hello word! This is just a floppy writing test";
 	char *buf = 0x800000;

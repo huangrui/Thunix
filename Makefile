@@ -3,7 +3,7 @@ CC	= gcc -nostdinc -Iinclude -Wall -Wno-unused-function
 LD	= ld
 LDFLAGS = --oformat binary -N
 
-KERNEL_OBJS = boot/head.o init/init.o kernel/kernel.o fs/ext2_fs.o mm/mm.o
+KERNEL_OBJS = boot/head.o init/init.o kernel/kernel.o mm/mm.o
 
 .PHONY :clean backup release
 
@@ -31,7 +31,7 @@ init/init.o:
 	(cd init; make)
 kernel/kernel.o:
 	(cd kernel; make)
-fs/ext2_fs.o:
+fs/fs.o:
 	(cd fs; make)
 mm/mm.o:
 	(cd mm; make)

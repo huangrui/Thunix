@@ -19,9 +19,9 @@ extern long kernel_mktime(struct tm*);
 extern int  printk(char *fmt, ...);
 extern void timer_interrupt(void);
 extern void floppy_interrupt(void);
-extern void rd_init(void);
-extern void ram_ext2fs_init();
-extern void ext2_fs_init();
+//extern void rd_init(void);
+//extern void ram_ext2fs_init();
+//extern void ext2_fs_init();
 
 
 #define CMOS_READ(addr) ({                      \
@@ -119,8 +119,8 @@ extern char tmp_floppy_area[1024];
 extern void keyboard_interrupt(void);
 extern void do_timer(void);
 extern unsigned long read_eip();
-extern void ram_mke2fs();
-extern struct m_inode *ext2_namei(char *);
+//extern void ram_mke2fs();
+//extern struct m_inode *ext2_namei(char *);
 
 extern void shell_init();
 
@@ -131,10 +131,10 @@ char *con_msg  = "Console initialization ...";
 char *kb_msg   = "Keyboard initialization ...";
 char *time_msg = "Timer clock initialization ...";
 char *flp_msg  = "Floppy initialization ...";
-char *rd_msg   = "Ram disk initialization ...";
-char *ram_ext2_msg = "Ram ext2 fs initialization ...";
-char *ext2_msg = "Ext2 filesystem initialization ...";
-char *ram_mke2fs_msg = "Making Ram ext2 filesystem ...";
+//char *rd_msg   = "Ram disk initialization ...";
+//char *ram_ext2_msg = "Ram ext2 fs initialization ...";
+//char *ext2_msg = "Ext2 filesystem initialization ...";
+//char *ram_mke2fs_msg = "Making Ram ext2 filesystem ...";
 
 
 void init(void)
@@ -166,6 +166,7 @@ void init(void)
         floppy_init();
         printk("\t\t%s\n", ok);
 
+/*
         printk("%s", rd_msg);
         rd_init();
         printk("\t\t%s\n", ok);
@@ -181,6 +182,7 @@ void init(void)
         printk("%s",ram_mke2fs_msg);
         ram_mke2fs();
         printk("\t\t%s\n", ok);
+*/
         
         /* Hope it quite safe now */
         sti();

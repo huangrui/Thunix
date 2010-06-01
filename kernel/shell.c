@@ -151,9 +151,9 @@ static void date()
 
 
 extern void cls(void);
-extern void ls(char *, char *);
+//extern void ls(char *, char *);
 extern void reboot();
-extern void mkdir(char *);
+//extern void mkdir(char *);
 extern void halt(void);
 void run_command(char *command, int argc, char **argv)
 {
@@ -191,6 +191,7 @@ void run_command(char *command, int argc, char **argv)
 	}
 
         else if ( is_command(command, "mkdir") ) {
+		;/*
                 if (argc < 2) {
                         printk("mkdir usage: please input at least one dir name\n");
                 } else {
@@ -199,9 +200,11 @@ void run_command(char *command, int argc, char **argv)
                                 mkdir(argv[argc]);
                         }
                 }
+		*/
         }
         
         else if ( is_command(command, "ls") ) {
+		;/*
                 if ( argc == 1) {
                        ls ("/", "-l");
                 } else if (argc == 1) {
@@ -214,6 +217,7 @@ void run_command(char *command, int argc, char **argv)
                                 i++;
                         }
                 }
+		*/
         }
 
         else if ( is_command(command, "version") )
@@ -221,7 +225,7 @@ void run_command(char *command, int argc, char **argv)
 
         else if ( is_command(command, "reboot") )
                 reboot ();
-#if 0
+#if 1
 	else if ( is_command(command, "debug") )
 		Debug();
 #endif
