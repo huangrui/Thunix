@@ -356,10 +356,3 @@ struct inode * tfs_mknod(struct tfs_sb_info *sbi, const char *filename, int mode
 
 	return inode;
 }
-
-
-#if 0 /* the debug part */
-int main(int argc, char *argv[])
-{
-}
-#endif

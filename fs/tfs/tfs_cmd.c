@@ -72,11 +72,6 @@ void ls(struct tfs_sb_info *sbi, char *filename)
 		return;
 	}
 
-
-#ifdef TFS_DEBUG
-	#include <hexdump.h>
-	hexdump(dir->dd_dir->inode->i_data, TFS_N_BLOCKS * sizeof(uint32_t *));
-#endif
 	while (de = tfs_readdir(dir)) {
 		printk("%6d\t %s\n", de->d_ino, de->d_name);
 		free(de);

@@ -32,6 +32,9 @@ touch help
 touch hello
 touch halt
 touch reboot
+cd ..
+cp_in gen-test.sh
+cp_in README
 quit
 EOF
 
