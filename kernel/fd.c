@@ -24,7 +24,7 @@ extern unsigned long count_down;
 #define TRUE  1
 
 
-#define LOG printk
+#define LOG //printk
 
 
 #define immoutb_p(val,port)                                             \
@@ -147,7 +147,13 @@ static int get_result(void)
 static int wait_fdc(int sensei)
 {
         int time_out;
-        count_down = 1000; /* set count_down init. value to 2 second */
+        count_down = 30; /* set count_down init. value to 300 ms*/
+
+	/* 
+ 	 * As I was developing thunix on bochs, that means we don't
+	 * need a hardware delay, so I make the count_down to 10 ms
+	 */
+        count_down = 1; 
 
         /* wait for FLOPPY_INTERRUPT hander to signal command finished */
         while (!done && count_down)

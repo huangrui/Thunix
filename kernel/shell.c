@@ -158,6 +158,9 @@ extern void cd(struct tfs_sb_info *sbi, char *);
 extern void cp(struct tfs_sb_info *sbi, char *, char *);
 extern void cat(struct tfs_sb_info *sbi, char *);
 extern void mkdir(struct tfs_sb_info *sbi, char *);
+extern void rmdir(struct tfs_sb_info *sbi, char *);
+extern void rm(struct tfs_sb_info *sbi, char *);
+extern void touch(struct tfs_sb_info *sbi, char *);
 extern void halt(void);
 void run_command(char *command, int argc, char **argv)
 {
@@ -208,6 +211,17 @@ void run_command(char *command, int argc, char **argv)
 			mkdir(tfs_sbi, argv[1]);	
                 }
         }
+	else if ( is_command(command, "rmdir") ) {
+		rmdir(tfs_sbi, argv[1]);
+	} 
+
+	else if ( is_command(command, "rm") ) {
+		rm(tfs_sbi, argv[1]);
+
+	}
+	else if ( is_command(command, "touch") ) {
+		touch(tfs_sbi, argv[1]);
+	}
         
         else if ( is_command(command, "ls") ) {
                 if ( argc == 1) {

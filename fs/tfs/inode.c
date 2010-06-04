@@ -1,9 +1,10 @@
 #include <stdio.h>
 #include <string.h>
 #include <malloc.h>
-#include <tfs.h>
-#include <cache.h>
-#include <dirent.h>
+
+#include "tfs.h"
+#include "cache.h"
+#include "dirent.h"
 
 #define current_time 0
 
@@ -49,6 +50,8 @@ struct inode *new_inode(int mode)
 int tfs_release_inode(struct tfs_sb_info *sbi, struct inode *inode)
 {
 	int inr = inode->i_ino;
+	int index = 0;
+	int block;
 
 	if (!inode) {
 		printk("ERROR: trying to free a NULL inode!\n");
@@ -62,8 +65,10 @@ int tfs_release_inode(struct tfs_sb_info *sbi, struct inode *inode)
 		return -1;
 	}
 
+	while ((block = tfs_bmap(inode, index++)))
+		tfs_free_block(sbi, block);
+
 	free_inode(inode);
-	return 0;
 }
 
 	
@@ -162,8 +167,7 @@ struct inode *tfs_iget(struct tfs_sb_info * sbi, char *dname, struct inode *dir)
 {
 	struct tfs_dir_entry *de;
 
-	de = tfs_find_entry(sbi, dname, dir);
-	if (!de)
+	if (!tfs_find_entry(sbi, dname, dir, &de))
 		return NULL;
 	
 	return tfs_iget_by_inr(sbi, de->d_inode);
@@ -274,7 +278,7 @@ static const char *__strrchr(const char *s, int c)
 	return end;
 }
 
-static const char *get_base_name(const char *path_org)
+const char *get_base_name(const char *path_org)
 {
 	char *p;
 	char *path = strdup(path_org);
@@ -303,12 +307,11 @@ struct inode * __mknod(struct tfs_sb_info *sbi, struct inode *dir, const char *f
 {
 	struct inode *inode;
 	struct tfs_dir_entry *de;
+	struct cache_struct *cs;
 	int dirty = 0;
 
-
-	if ((de = tfs_find_entry(sbi, filename, dir))) {
+	if (cs = tfs_find_entry(sbi, filename, dir, &de)) {
 		printk("ERROR: %s exist!\n", filename);
-		free_inode(dir);
 		return NULL;
 	}
 
@@ -343,10 +346,10 @@ struct inode * tfs_mknod(struct tfs_sb_info *sbi, const char *filename, int mode
 	}
 	
 	inode = __mknod(sbi, dir, base_name, mode);
-	if (inode) {
-		if (parent_dir)
-			*parent_dir = dir;
-		else
+	if (parent_dir) {
+		*parent_dir = dir;
+	} else {
+		if (this_dir->dd_dir->inode != dir)
 			free_inode(dir);
 	}
 

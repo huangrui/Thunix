@@ -136,9 +136,10 @@ int tfs_free_block(struct tfs_sb_info *, uint32_t);
 
 
 /* dir.c */
-struct tfs_dir_entry *tfs_find_entry(struct tfs_sb_info *, const char *, struct inode *);
+struct cache_struct *tfs_find_entry(struct tfs_sb_info *, const char *, struct inode *, struct tfs_dir_entry **);
 int tfs_add_entry(struct tfs_sb_info *, struct inode *, const char *, int , int *);
 int tfs_mkdir(struct tfs_sb_info *, const char *);
+int tfs_rmdir(struct tfs_sb_info *, const char *);
 
 /* inode.c */
 struct inode *new_inode(int);
@@ -151,5 +152,6 @@ uint32_t tfs_bmap(struct inode *, int);
 int tfs_iwrite(struct tfs_sb_info *, struct inode *);
 struct inode *__mknod(struct tfs_sb_info *, struct inode *, const char *, int);
 struct inode *tfs_mknod(struct tfs_sb_info *, const char *, int, struct inode **);
+const char *get_base_name(const char *);
 
 #endif /* tfs.h */

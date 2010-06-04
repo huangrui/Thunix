@@ -7,12 +7,12 @@
 #include "file.h"
 
 
-struct file *tfs_open(struct tfs_sb_info *sbi, const char *filename)
+struct file *tfs_open(struct tfs_sb_info *sbi, const char *filename, uint32_t flag)
 {
 	struct inode *inode;
 	struct file *file;
 
-	inode = tfs_namei(sbi, filename, LOOKUP_CREATE);
+	inode = tfs_namei(sbi, filename, flag);
 	if (!inode) {
 		printk("ERROR: open file: %s falied!\n", filename);
 		return NULL;

@@ -4,11 +4,11 @@
 #include <file.h>
 #include <dirent.h>
 
-static struct file * tfs_file_open(struct tfs_sb_info *sbi, char *filename)
+static struct file * tfs_file_open(struct tfs_sb_info *sbi, char *filename, uint32_t flags)
 {
 	struct file *file;
 
-	file = tfs_open(sbi, filename);
+	file = tfs_open(sbi, filename, flags);
 	if (!file) {
 		printk("tfs_open: open file %s error!\n", filename);
 		return NULL;
@@ -44,7 +44,7 @@ void cd(struct tfs_sb_info *sbi, char *dst_dir)
 
 void cat(struct tfs_sb_info *sbi, char *filename)
 {
-	struct file *file = tfs_file_open(sbi, filename);
+	struct file *file = tfs_file_open(sbi, filename, 0);
 	char buf[1024];
 	int bytes_read;
 
@@ -84,6 +84,21 @@ void mkdir(struct tfs_sb_info *sbi, char *filename)
 	tfs_mkdir(sbi, filename);
 }
 
+void rmdir(struct tfs_sb_info *sbi, char *filename)
+{
+	tfs_rmdir(sbi, filename);
+}
+
+void rm(struct tfs_sb_info *sbi, char *filename)
+{
+	tfs_unlink(sbi, filename);
+}
+
+void touch (struct tfs_sb_info *sbi, char *filename)
+{
+	struct file *file = tfs_file_open(sbi, filename, LOOKUP_CREATE);
+}
+
 
 void cp(struct tfs_sb_info *sbi, char *from, char *to)
 {
@@ -93,10 +108,10 @@ void cp(struct tfs_sb_info *sbi, char *from, char *to)
 	struct file *to_file;
 
 
-	from_file = tfs_file_open(sbi, from);
+	from_file = tfs_file_open(sbi, from, 0);
 	if (!from_file)
 		return;
-	to_file = tfs_file_open(sbi, to);
+	to_file = tfs_file_open(sbi, to, LOOKUP_CREATE);
 	if (!to_file) {
 		tfs_close(from_file);
 		return;

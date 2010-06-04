@@ -13,7 +13,7 @@ struct file {
         uint32_t offset;      /* for next read */
 };
 
-struct file *tfs_open(struct tfs_sb_info *, const char *);
+struct file *tfs_open(struct tfs_sb_info *, const char *, uint32_t);
 int tfs_read(struct file *, void *, uint32_t);
 int tfs_write(struct file *, void *, uint32_t);
 int tfs_lseek(struct file *, int, int);
