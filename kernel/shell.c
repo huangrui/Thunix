@@ -224,18 +224,9 @@ void run_command(char *command, int argc, char **argv)
 	}
         
         else if ( is_command(command, "ls") ) {
-                if ( argc == 1) {
-                       ls (tfs_sbi, ".");
-                } else if (argc == 1) {
-                       ls(tfs_sbi, argv[1]);
-                } else {
-                        int i = 1;
-                        while ( i < argc) {
-                                printk("%s:\n", argv[i]);
-                                ls (tfs_sbi, argv[i]);
-                                i++;
-                        }
-                }
+		if (argc == 1)
+			argv[1] = ".";
+		ls(tfs_sbi, argv[1]);
         }
 
         else if ( is_command(command, "version") )

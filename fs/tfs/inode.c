@@ -33,6 +33,7 @@ struct inode *new_inode(int mode)
 	inode->i_mtime = current_time;
 
 	inode->i_data = malloc(TFS_N_BLOCKS * sizeof(uint32_t *));
+	memset(inode->i_data, 0, TFS_N_BLOCKS * sizeof(uint32_t *));
 	if (!inode->i_data) {
 		printk("malloc for inode data failed!\n");
 		free(inode);

@@ -307,6 +307,12 @@ struct dirent * tfs_readdir(DIR *dir)
                 return NULL;        
         cs = get_cache_block(sbi, block);
         de = (struct tfs_dir_entry *)(cs->data + (file->offset & (sbi->s_block_size- 1)));
+
+#ifdef TFS_DEBUG
+	#include <hexdump.h>
+	if (de->d_inode)
+	hexdump(de, sizeof(*de));
+#endif
         
         if (!(dirent = malloc(sizeof(*dirent)))) {
                 printk("malloc dirent structure in tfs_readdir error!\n");
