@@ -148,7 +148,6 @@ static int wait_fdc(int sensei)
 {
         int time_out;
         count_down = 1000; /* set count_down init. value to 2 second */
-        
 
         /* wait for FLOPPY_INTERRUPT hander to signal command finished */
         while (!done && count_down)

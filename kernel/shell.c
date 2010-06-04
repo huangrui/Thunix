@@ -211,7 +211,7 @@ void run_command(char *command, int argc, char **argv)
         
         else if ( is_command(command, "ls") ) {
                 if ( argc == 1) {
-                       ls (tfs_sbi, "/");
+                       ls (tfs_sbi, ".");
                 } else if (argc == 1) {
                        ls(tfs_sbi, argv[1]);
                 } else {

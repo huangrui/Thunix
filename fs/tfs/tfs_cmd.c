@@ -37,6 +37,8 @@ void cd(struct tfs_sb_info *sbi, char *dst_dir)
 			tfs_closedir(old);
 		}
 	}
+	
+	TFS_DEBUG("CDed in '%s' with inode '%d'\n", dst_dir, this_dir->dd_dir->inode->i_ino);
 }
 
 
