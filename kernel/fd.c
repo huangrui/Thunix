@@ -24,7 +24,7 @@ extern unsigned long count_down;
 #define TRUE  1
 
 
-#define LOG //printk
+#define LOG printk
 
 
 #define immoutb_p(val,port)                                             \
@@ -232,8 +232,9 @@ static void motor_on(void)
 {
         //LOG("motor_on() called ...\n");
         if ( !is_motor_on()) {
+		//LOG("Switch on motor...\n");
                 outb_p(0x1c,FD_DOR);
-                sleep(100);  /* delay 1 second for motor on */
+                sleep(30);  /* delay 300 milliseconds for motor on */
                 motoron = TRUE;
         }
 }
@@ -244,7 +245,7 @@ static void motor_off (void)
 {
         //LOG("motor_off() called ...\n");
         if (is_motor_on() ) {
-                count_down = 200;  /* start motor kill countdown: about 2s */
+                count_down = 30;  /* start motor kill countdown: about 300 ms */
                 while(count_down)
                         ;
                 outb_p(0x0c,FD_DOR);
@@ -297,7 +298,7 @@ static int seek(int track, int head)
         if ( !wait_fdc(TRUE) )
                 ;//return FALSE;  /* time out */
         
-	LOG("ST0: %x\t ST1: %x\n", sr0, fdc_track);
+	//LOG("ST0: %x\t ST1: %x\n", sr0, fdc_track);
         if ( ((sr0 & 0xF8) != 0x20) || (fdc_track != track)) {
 		LOG("Seek track#: %d failed\n", track);
                 return FALSE;
@@ -330,13 +331,13 @@ static void reset( )
         //LOG("reset() called ...\n");
 
         /* stop the motor and disable IRQ/DMA */
-        outb_p(0,FD_DOR);
+        outb_p(0x0c,FD_DOR);
 
         /* program data rate (500K/s) */
         outb_p(0,FD_DCR);
         
         /* re-enable interrupts */
-        outb_p(0x0c,FD_DOR);
+        outb_p(0x1c,FD_DOR);
 
         /* resetting triggered an interrupt - handle it */
         done = TRUE;
@@ -367,7 +368,7 @@ static void setup_DMA(unsigned long addr, int command)
         
 	immoutb_p(4|2,0x0a);            /* mask DMA 2 */
 
-        immoutb_p(0,0x0c);               /* clear flip flop */
+        immoutb_p(0x0,0x0c);               /* clear flip flop */
         
         immoutb_p(cmd,0x0b);
 
@@ -400,7 +401,7 @@ static int floppy_rw(int sector, char *buf, int command)
 	char *dma_buffer = buf;
 	static char tmp_dma_buffer[512];
 
-	LOG("TMP dma buffer: %p\n", tmp_dma_buffer);
+	//LOG("TMP dma buffer: %p\n", tmp_dma_buffer);
 
         lba_to_chs(sector, &head, &track, &sector);
 	LOG("head: %d \ttrack: %d \tsector: %d\n", head, track, sector);
@@ -444,7 +445,7 @@ static int floppy_rw(int sector, char *buf, int command)
         send_byte(0xFF);        /* sector size(only two valid vaules, 0xff when n!=0*/
 
         if (!wait_fdc(FALSE)) {
-                LOG("wait fdc failed!\n");
+                //LOG("wait fdc failed!\n");
                 //return 0;
                 /*
                 printk("Time out, trying operation again after reset() \n");
@@ -514,7 +515,7 @@ void do_floppy(void)
 {
         //LOG("floppy_interrupt() called ...\n");
         times ++;
-        //LOG("floppy interrupt %d times!\n",times);
+        LOG("floppy interrupt %d times!\n",times);
         /* signal operation finished */
         done = TRUE;
         outb(0x20,0x20);  /* EOI */
