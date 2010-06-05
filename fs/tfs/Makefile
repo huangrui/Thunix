@@ -1,29 +1,23 @@
-AS	= as -I../../include
 CC	= gcc -nostdinc -I../../include -Wall -Wno-unused
 LD	= ld
 LDFLAGS = --oformat binary -N
-CPP	=gcc -E -nostdinc -I../../include
 
-all: tfs.o #mktfs
+DIRNAME = fs/tfs
 
 OBJS    = balloc.o cache.o dir.o file.o ialloc.o inode.o super.o tfs_diskio.o tfs_cmd.o
 
+all: tfs.o
 
 tfs.o: ${OBJS} 
+	@printf '%8s   %s\n' 'LD' ${DIRNAME}/$@
 	${LD} -r -o $@ ${OBJS}
-.c.s:
-	${CC} -S -o $*.s $<
-.s.o:
-	${AS} -o $*.o $<
 .c.o:
+	@printf '%8s   %s\n' 'CC' ${DIRNAME}/$@
 	${CC} -c -o $*.o $<
-
-mktfs: balloc.c cache.c dir.c file.c ialloc.c inode.c mktfs.c utils.c
-	gcc -Wall -Wno-unused -o mktfs balloc.c cache.c dir.c file.c ialloc.c inode.c utils.c
 
 
 clean:
-	rm -f *.o *.map *~ tmp_make
+	@rm -f *.o *.map *~ tmp_make
 
 dep:
 	sed '/\#\#\# Dependencies/q' < Makefile > tmp_make

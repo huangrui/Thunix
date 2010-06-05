@@ -3,12 +3,12 @@
 TFS_DIR=${HOME}/project/fstk/fs/tfs
 
 # make a 1.44M disk
-dd if=/dev/zero of=root.img bs=1024 count=1440
+dd if=/dev/zero of=root.img bs=1024 count=1440 2>/tmp/dd-out
 
-dd if=/dev/zero of=tfs.img bs=1024 count=1024
+dd if=/dev/zero of=tfs.img bs=1024 count=1024 2>/tmp/dd-out
 
 # cp the kernel
-dd if=thunix.img of=root.img conv=notrunc
+dd if=thunix.img of=root.img conv=notrunc 2>/tmp/dd-out
 
 
 qemu-img create tfs.img 1M
@@ -38,5 +38,5 @@ cp_in README
 quit
 EOF
 
-dd if=tfs.img of=root.img bs=1024 seek=416 conv=notrunc
+dd if=tfs.img of=root.img bs=1024 seek=416 conv=notrunc 2>/tmp/dd-out
 mv root.img thunix.img

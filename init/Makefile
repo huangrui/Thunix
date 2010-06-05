@@ -1,19 +1,14 @@
 AS	= as -I../include
 CC	= gcc -nostdinc -I../include -Wall -Wno-unused
-LD	= ld
-LDFLAGS = --oformat binary -N
 
-OBJS	 = init.o
+DIRNAME = init
 
-init.o: init.o
+all: init.o
 
-.c.s:
-	${CC} -S -o $*.s $<
-.s.o:
-	${AS} -o $*.o $<
 .c.o:
+	@printf "%8s   %s\n" "CC" ${DIRNAME}/$@
 	${CC} -c -o $*.o $<
 
 
 clean:
-	rm -f *.o *.map *~
+	@rm -f *.o *.map *~

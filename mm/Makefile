@@ -4,21 +4,21 @@ LD	= ld
 LDFLAGS = --oformat binary -N
 CPP	=gcc -E -nostdinc -I../include
 
+DIRNAME = mm
+
 OBJS    = malloc.o 
 
 mm.o: ${OBJS} 
+	@printf "%8s   %s\n" "LD" ${DIRNAME}/$@
 	${LD} -r -o $@ ${OBJS}
-.c.s:
-	${CC} -S -o $*.s $<
-.s.o:
-	${AS} -o $*.o $<
 .c.o:
+	@printf "%8s   %s\n" "CC" ${DIRNAME}/$@
 	${CC} -c -o $*.o $<
 
 
 
 clean:
-	rm -f *.o *.map *~ tmp_make
+	@rm -f *.o *.map *~ tmp_make
 
 dep:
 	sed '/\#\#\# Dependencies/q' < Makefile > tmp_make

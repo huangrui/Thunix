@@ -1,31 +1,32 @@
-AS	= as -Iinclude
-CC	= gcc -nostdinc -Iinclude -Wall -Wno-unused-function
 LD	= ld
 LDFLAGS = --oformat binary -N
+MAKEFLAGS +=  --no-print-directory
+
+ifeq ("$(origin V)", "command line")
+	MAKEFLAGS +=
+else
+	MAKEFLAGS += --quiet
+endif
 
 KERNEL_OBJS = boot/head.o init/init.o kernel/kernel.o mm/mm.o fs/fs.o
 
 .PHONY :clean backup release
 
-
-
-.c.s:
-	${CC} -S -o $*.s $<
-.s.o:
-	${AS} -o $*.o $<
-.c.o:
-	${CC} -c -o $*.o $<
-
-
 all: thunix.img doc
 
 thunix.img: boot.img kernel.img
+	@printf "%8s   %s\n" "MK" $@
 	cat boot.img kernel.img > thunix.img
-	@wc -c thunix.img
+	(./gen-test.sh >/dev/null)
 
+boot.img: boot/bootsect.o
+	@printf "%8s   %s\n" "LD" $@
+	${LD} ${LDFLAGS} -e start -Ttext 0x7c00 -o $@ $<
+kernel.img: ${KERNEL_OBJS}
+	@printf "%8s   %s\n" "LD" $@
+	${LD} ${LDFLAGS} -e pm_mode -Ttext 0x0000 -o $@ ${KERNEL_OBJS}
 
-
-boot/boot.o:
+boot/bootsect.o:
 	(cd boot; make)
 init/init.o:
 	(cd init; make)
@@ -35,11 +36,6 @@ fs/fs.o:
 	(cd fs; make)
 mm/mm.o:
 	(cd mm; make)
-
-boot.img: boot/bootsect.o
-	${LD} ${LDFLAGS} -e start -Ttext 0x7c00 -o $@ $<
-kernel.img: ${KERNEL_OBJS}
-	${LD} ${LDFLAGS} -e pm_mode -Ttext 0x0000 -o $@ ${KERNEL_OBJS}
 
 doc:
 	(cd doc; make)

@@ -4,23 +4,24 @@ LD	= ld
 LDFLAGS = --oformat binary -N
 CPP	=gcc -E -nostdinc -I../include
 
+DIRNAME = kernel
+
 OBJS    = asm.o console.o kb.o mktime.o panic.o printk.o \
 	 timer.o traps.o vsprintf.o fd.o shell.o reboot.o halt.o hexdump.o
 
 
 kernel.o: ${OBJS}
+	@printf '%8s   %s\n' 'LD' ${DIRNAME}/$@
 	${LD} -r -o $@ ${OBJS}
-.c.s:
-	${CC} -S -o $*.s $<
 .s.o:
+	@printf '%8s   %s\n' 'AS' ${DIRNAME}/$@
 	${AS} -o $*.o $<
 .c.o:
+	@printf '%8s   %s\n' 'CC' ${DIRNAME}/$@
 	${CC} -c -o $*.o $<
 
-
-
 clean:
-	rm -f *.o *.map *~ tmp_make
+	@rm -f *.o *.map *~ tmp_make
 
 dep:
 	sed '/\#\#\# Dependencies/q' < Makefile > tmp_make

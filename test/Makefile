@@ -8,6 +8,7 @@ all: boot.img
 	${AS} -o $*.o $<
 
 boot.img: boot.o
+	@printf "%8s   %s\n" "LD" $@
 	${LD} ${LDFLAGS} -e start -Ttext 0x7c00 -o $@ $<
 
 

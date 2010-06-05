@@ -1,18 +1,13 @@
 AS	= as -I../include
-CC	= gcc -nostdinc -I../include -Wall
-LD	= ld
-LDFLAGS = --oformat binary -N
-
 OBJS	 = bootsect.o head.o
 
-stop: bootsect.o head.o
+DIRNAME = boot
 
-.c.s:
-	${CC} -S -o $*.s $<
+all: bootsect.o head.o
+
 .s.o:
+	@printf "%8s   %s\n" "AS" ${DIRNAME}/$@
 	${AS} -o $*.o $<
-.c.o:
-	${CC} -c -o $*.o $<
 
 clean:
-	rm -f *.o *.map *~
+	@rm -f *.o *.map *~
