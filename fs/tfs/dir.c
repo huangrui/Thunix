@@ -267,6 +267,8 @@ int tfs_unlink(struct tfs_sb_info *sbi, const char *path)
 	de->d_inode = 0;
 	tfs_bwrite(sbi, cs->block, cs->data);
 	tfs_release_inode(sbi, inode);
+	
+	return 0;
 }
 
 

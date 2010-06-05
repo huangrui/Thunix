@@ -140,12 +140,16 @@ struct cache_struct *tfs_find_entry(struct tfs_sb_info *, const char *, struct i
 int tfs_add_entry(struct tfs_sb_info *, struct inode *, const char *, int , int *);
 int tfs_mkdir(struct tfs_sb_info *, const char *);
 int tfs_rmdir(struct tfs_sb_info *, const char *);
+int tfs_unlink(struct tfs_sb_info *, const char *);
 
 /* inode.c */
 struct inode *new_inode(int);
 void free_inode(struct inode *);
+struct inode * tfs_new_inode(struct tfs_sb_info *, int);
+int tfs_release_inode(struct tfs_sb_info *, struct inode *);
 struct inode *tfs_root_init(struct tfs_sb_info *);
 struct inode *tfs_iget_root(struct tfs_sb_info *);
+struct inode *tfs_iget_by_inr(struct tfs_sb_info *, int);
 struct inode *tfs_iget(struct tfs_sb_info *, char *, struct inode *);
 struct inode *tfs_namei(struct tfs_sb_info *, const char *, uint32_t);
 uint32_t tfs_bmap(struct inode *, int);

@@ -70,6 +70,7 @@ int tfs_release_inode(struct tfs_sb_info *sbi, struct inode *inode)
 		tfs_free_block(sbi, block);
 
 	free_inode(inode);
+	return 0;
 }
 
 	
@@ -311,7 +312,7 @@ struct inode * __mknod(struct tfs_sb_info *sbi, struct inode *dir, const char *f
 	struct cache_struct *cs;
 	int dirty = 0;
 
-	if (cs = tfs_find_entry(sbi, filename, dir, &de)) {
+	if ((cs = tfs_find_entry(sbi, filename, dir, &de))) {
 		printk("ERROR: %s exist!\n", filename);
 		return NULL;
 	}

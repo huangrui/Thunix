@@ -57,6 +57,9 @@ static unsigned long find_first_zero(void *buf, void *end)
 	for (i = 0; i < 32; i++)
 		if (test_bit(p, i) == 0)
 			return block + i;
+	
+	/* Just to avoid the compile warning message */
+	return -1;
 }
 
 

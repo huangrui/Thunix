@@ -210,6 +210,7 @@ void Debug_mm(void)
 	char *buf;
 
 #include <hexdump.h>
+#include <fd.h>
 	buf = malloc(1024);
 	printk("malloc returned: %p\n", buf);
 	floppy_reads(0, buf, 2);

@@ -182,7 +182,7 @@ void init(void)
 	printk("Cd into root... ");
 	this_dir = tfs_opendir(tfs_sbi, "/");
 	if (!this_dir) {
-		printf("cd into root dir failed!\n");
+		printk("cd into root dir failed!\n");
 	}
 	printk("\t\t\t%s\n", ok);
 

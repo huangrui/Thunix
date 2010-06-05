@@ -72,7 +72,7 @@ void ls(struct tfs_sb_info *sbi, char *filename)
 		return;
 	}
 
-	while (de = tfs_readdir(dir)) {
+	while ((de = tfs_readdir(dir))) {
 		printk("%6d\t %s\n", de->d_ino, de->d_name);
 		free(de);
 	}
