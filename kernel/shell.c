@@ -15,7 +15,9 @@
 #include <string.h>
 
 #include <tfs.h>
+#include <file.h>
 #include <hexdump.h>
+#include <unistd.h>
 
 #define BUFFER_SIZE 512
 
@@ -150,6 +152,34 @@ static void date()
                );
 }
 
+int exec(struct tfs_sb_info *sbi, char *filename)
+{
+	struct file *file = tfs_open(sbi, filename, 0);
+
+	/*
+ 	 * The current exec plan is: load the binary file to 16M,
+ 	 * then jump to this address.
+ 	 *
+ 	 * I will try to make a good global thunix memory allocation
+ 	 * map when I get time.
+ 	 */
+	char * exec_buf = (char *)0x1600000;
+	int bytes_read;
+	int (*entry)(void);
+
+	if (!file) {
+		printk("tfs_open: open file %s error!\n", filename);
+		return -1;
+	}
+
+	bytes_read = tfs_read(file, exec_buf, 512);
+	tfs_close(file);
+
+	entry = (int(*)(void))(exec_buf);
+
+	return entry();
+
+}
 
 extern void cls(void);
 extern void reboot();
@@ -181,6 +211,8 @@ void run_command(char *command, int argc, char **argv)
 
         else if (is_command(command, "date") )
                 date();
+	else if (is_command(command, "exec") )
+		exec(tfs_sbi, argv[1]);
 
         else if (is_command(command, "halt") )
                 halt();
@@ -235,8 +267,10 @@ void run_command(char *command, int argc, char **argv)
         else if ( is_command(command, "reboot") )
                 reboot ();
 #if 1
-	else if ( is_command(command, "debug") )
-		Debug();
+	else if ( is_command(command, "debug") ) {
+		struct sys_test st = {12, "Aleaxander"};
+		test3(512, "Hello thunix system call!", &st);
+	}
 #endif
         else
                 printk("unknown command, please type 'help' for more information\n");

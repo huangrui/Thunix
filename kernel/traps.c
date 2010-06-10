@@ -2,6 +2,9 @@
 #include <asm/system.h>
 #include <asm/io.h>
 #include <thunix.h>
+#include <malloc.h>
+
+#include <syscall.h>
 
 unsigned long long *idt = (unsigned long long  *)0x80000;
 
@@ -247,5 +250,10 @@ void trap_init(void)
         outb_p(inb_p(0xa1)&0xdf, 0xa1);
         
         /* set_trap_gate(39,&parallel_interrupt);*/
-        
+
+
+	/* Install system call handler */
+	extern void syscall_interrupt(void);
+	scp = malloc(sizeof(*scp));
+        set_system_gate(0x80, &syscall_interrupt);
 }

@@ -324,3 +324,43 @@ floppy_interrupt:
 	popl %eax
               
 	iret
+
+first  = 0x00
+second = 0x04
+third  = 0x08
+
+.globl syscall_interrupt
+syscall_interrupt:
+        pushl %eax
+	pushl %ecx
+	pushl %edx
+        pushl %ebx
+	pushl %edi
+	pushl %esi
+	pushl %ebp
+	pushl %ds
+	pushl %es
+	pushl %fs
+
+	pushl %eax
+
+	movl scp, %eax
+	movl %edx, third(%eax)
+	movl %ecx, second(%eax)
+	movl %ebx, first(%eax)
+
+        call syscall
+        
+        addl $4,%esp                    # pop the nr number
+	pop %fs
+	pop %es
+	pop %ds
+	popl %ebp
+	popl %esi
+	popl %edi
+	popl %ebx
+	popl %edx
+	popl %ecx
+	popl %eax
+              
+	iret

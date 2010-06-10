@@ -6,9 +6,11 @@ CPP	=gcc -E -nostdinc -I../include
 
 DIRNAME = kernel
 
-OBJS    = asm.o console.o kb.o mktime.o panic.o printk.o \
+OBJS    = asm.o sys.o console.o kb.o mktime.o panic.o printk.o \
 	 timer.o traps.o vsprintf.o fd.o shell.o reboot.o halt.o hexdump.o
+#user_progs = user-test
 
+all: kernel.o ${user_progs}
 
 kernel.o: ${OBJS}
 	@printf '%8s   %s\n' 'LD' ${DIRNAME}/$@

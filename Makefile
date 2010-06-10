@@ -12,12 +12,17 @@ KERNEL_OBJS = boot/head.o init/init.o kernel/kernel.o mm/mm.o fs/fs.o
 
 .PHONY :clean backup release
 
-all: thunix.img doc
+all: thunix.img user-progs
 
 thunix.img: boot.img kernel.img
 	@printf "%8s   %s\n" "MK" $@
 	cat boot.img kernel.img > thunix.img
 	(./gen-test.sh >/dev/null)
+
+user-progs:
+	@printf "\n\n=== Generating user space programs ===\n"
+	(cd user; make)
+	cp user/user-test ./
 
 boot.img: boot/bootsect.o
 	@printf "%8s   %s\n" "LD" $@
@@ -46,6 +51,7 @@ release:
 bochs:
 	bochs -qf bochsrc 
 clean:
+	@printf "%8s   *.o *~ boot.img kernle.img\n" "RM" 
 	rm -f bochsout.txt boot.img kernel.img *~ include/*~
 	(cd boot; make clean)
 	(cd init; make clean)
@@ -53,6 +59,7 @@ clean:
 	(cd fs; make clean)
 	(cd mm; make clean)
 	(cd doc; make clean)
+	(cd user; make clean)
 
 dep:
 	(cd kernel; make dep)
