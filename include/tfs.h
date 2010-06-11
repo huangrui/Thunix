@@ -120,8 +120,8 @@ extern struct tfs_sb_info *tfs_sbi;
 #define roundup(x, y) ((x) / (y) + (((x) % (y)) ? 1 : 0))
 
 /* tfs_diskio.c */
-extern void tfs_bread(struct tfs_sb_info *, uint32_t , void *);
-extern void tfs_bwrite(struct tfs_sb_info *, uint32_t, void *);
+extern int tfs_bread(struct tfs_sb_info *, uint32_t , void *);
+extern int tfs_bwrite(struct tfs_sb_info *, uint32_t, void *);
 
 /* super.c */
 struct tfs_sb_info * tfs_mount(void);

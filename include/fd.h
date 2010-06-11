@@ -62,10 +62,10 @@
 extern void floppy_interrupt(void);
 void do_fd_request(int, void*, int );
 
-void floppy_read(int, void *);
-void floppy_write(int, void *);
-void floppy_reads(int, void *, unsigned int);
-void floppy_writes(int, void *, unsigned int);
+int floppy_read(int, void *);
+int floppy_write(int, void *);
+int floppy_reads(int, void *, unsigned int);
+int floppy_writes(int, void *, unsigned int);
 void floppy_init(void);
 
 #endif

@@ -83,10 +83,14 @@ struct cache_struct* get_cache_block(struct tfs_sb_info *sbi, uint32_t block)
     
         /* missed, so we need to load it */
         if (i == cache_entries) {        
+		int res;
+	
+                res = tfs_bread(sbi, block, cs->data);
+		if (res < 0)
+			return NULL;
                 /* store it at the head of real cache */
                 cs = head->next;        
                 cs->block = block;
-                tfs_bread(sbi, block, cs->data);
 	}
     
         /* remove cs from current position in list */

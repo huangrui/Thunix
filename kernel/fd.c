@@ -16,6 +16,7 @@
 #include <asm/system.h>
 #include <stdio.h>
 #include <string.h>
+#include <errno.h>
 #include <hexdump.h>
 
 extern unsigned long count_down;
@@ -464,50 +465,62 @@ static int floppy_rw(int sector, char *buf, int command)
 
         if (/*res != 7 || */(ST0 & 0xf8) || (ST1 & 0xbf) || (ST2 & 0x73) ) {
                 if (ST1 & 0x02) 
-                        printk("Drive is write protected!\n");
+                        LOG("Drive is write protected!\n");
                 else
-                        printk("floppy_rw: bad interrupt!\n");
+                        LOG("floppy_rw: bad interrupt!\n");
 
-                return 0;
+                return -EIO;
         } else {
 		LOG("floppy_rw: OK\n");
 		if ((unsigned long)buf >= 0xff000 && command == FD_READ)
 			memcpy(buf, dma_buffer, 512);
-		return 1;
+		return 0;
         }
 }
 
 
 /* Read ONE sector */
-void floppy_read(int sector, void * buf)
+int floppy_read(int sector, void * buf)
 {
-        floppy_rw(sector, buf, FD_READ);
+        return floppy_rw(sector, buf, FD_READ);
 }
 
 /* Write ONE sector */
-void floppy_write(int sector, void * buf)
+int floppy_write(int sector, void * buf)
 {
-        floppy_rw(sector, buf, FD_WRITE);
+        return floppy_rw(sector, buf, FD_WRITE);
 }
 
 /*
  * The two following function handles multi-sectors reading
  * and writing.
  */
-void floppy_reads(int sector, void *buf, unsigned int sectors)
+int floppy_reads(int sector, void *buf, unsigned int sectors)
 {
+	int res = 0;
+
 	while (sectors--) {
-		floppy_rw(sector++, buf, FD_READ);
+		res = floppy_read(sector++, buf);
+		if (res < 0)
+			break;
 		buf += 512;
 	}
+	
+	return res;
 }
 
-void floppy_writes(int sector, void *buf, unsigned int sectors)
+int floppy_writes(int sector, void *buf, unsigned int sectors)
 {
+	int res = 0;
+
 	while (sectors--) {
-		floppy_rw(sector++, buf, FD_WRITE);
+		res = floppy_write(sector++, buf);
+		if (res < 0)
+			break;
 		buf += 512;
 	}
+
+	return res;
 }
     
 static int times = 0;                

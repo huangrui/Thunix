@@ -2,15 +2,21 @@
 #include <malloc.h>
 #include <bitopts.h>
 #include <tfs.h>
+#include <cache.h>
+#include <errno.h>
 
-
-static void * tfs_read_inode_bitmap(struct tfs_sb_info *sbi)
+/*
+ * Cache the inode bitmap block
+ *
+ * NOTE: this may be failed!
+ */
+static struct cache_struct * tfs_read_inode_bitmap(struct tfs_sb_info *sbi)
 {
-	char *buf = malloc(sbi->s_block_size);
+	struct cache_struct *cs;
 
-	tfs_bread(sbi, sbi->s_inode_bitmap, buf);
+	cs = get_cache_block(sbi, sbi->s_inode_bitmap);
 
-	return buf;
+	return cs;
 }
 
 /*
@@ -18,38 +24,44 @@ static void * tfs_read_inode_bitmap(struct tfs_sb_info *sbi)
  */
 int tfs_free_inode(struct tfs_sb_info *sbi, int inr)
 {
-	char *bitmap = tfs_read_inode_bitmap(sbi);
+	struct cache_struct *cs = tfs_read_inode_bitmap(sbi);
+	void *bitmap = cs ? cs->data : NULL;
+	
+	if (!bitmap)
+		return -EIO;
 
 	/* inode number count from 1 */
-	if (clear_bit(bitmap, inr - 1) == 0) {
+	if (clear_bit(bitmap, inr - 1) == 0)
 		printk("ERROR: trying to free an unallocated inode!\n");
-		free(bitmap);
-		return -1;
-	}
+	else
+		tfs_bwrite(sbi, sbi->s_inode_bitmap, bitmap);
 
-	tfs_bwrite(sbi, sbi->s_inode_bitmap, bitmap);
-	free(bitmap);
 	return 0;
 }
 
 int tfs_alloc_inode(struct tfs_sb_info *sbi, int inr)
 {
-	char *bitmap;
+	struct cache_struct *cs;
+	void *bitmap;
 
-	if (inr < 0) {
+	if (inr < 1) {
 		printk("ERROR: trying to alloc a negtive inode!\n");
-		return -1;
+		return 0;
 	}
+	inr--;
 
-	bitmap = tfs_read_inode_bitmap(sbi);
+	cs = tfs_read_inode_bitmap(sbi);
+	bitmap = cs ? cs->data : NULL;
+
 	/* try the target first */
-	if (test_bit(bitmap, inr - 1) != 0)
-		inr = find_first_zero(bitmap, bitmap + sbi->s_block_size) + 1;
+	if (test_bit(bitmap, inr) != 0)
+		inr = find_first_zero(bitmap, bitmap + sbi->s_block_size);
 	if (inr != -1) {
-		set_bit(bitmap, inr - 1);
+		set_bit(bitmap, inr);
 		tfs_bwrite(sbi, sbi->s_inode_bitmap, bitmap);
+	} else {
+		return -ENOSPC;
 	}
 
-	free(bitmap);
-	return inr;
+	return inr + 1;
 }
