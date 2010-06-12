@@ -57,8 +57,8 @@ release:
 bochs:
 	bochs -qf bochsrc 
 clean:
-	@printf "%8s   *.o *~ boot.img kernle.img\n" "RM" 
-	rm -f bochsout.txt boot.img kernel.img *~ include/*~
+	@printf "%8s   *.o *~ boot.img kernle.img *.elf\n" "RM" 
+	rm -f bochsout.txt boot.img kernel.img *~ include/*~ *.elf
 	(cd boot; make clean)
 	(cd init; make clean)
 	(cd kernel; make clean)
