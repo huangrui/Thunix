@@ -41,7 +41,7 @@ void cache_init(struct tfs_sb_info *sbi)
         
         for (i = 0; i < cache_entries; i++) {
                 cur = &cache[i];
-                cur->block   = 0;
+                cur->block   = -1;
                 cur->prev    = prev;
                 prev->next   = cur;
                 cur->data    = data;
@@ -65,10 +65,11 @@ struct cache_struct* get_cache_block(struct tfs_sb_info *sbi, uint32_t block)
         struct cache_struct *cs = head->prev;
         int i;
          
-        if (!block) {
-                printk("ERR: we got a ZERO block number that's not we want!\n");
+        if (block < 0) {
+                printk("ERR: we got a NEGTIVE block number that's not we want!\n");
                 return NULL;
         }
+
     
         /* it's aleardy the freshest, so nothing we need do , just return it */
         if (cs->block == block)
@@ -83,13 +84,10 @@ struct cache_struct* get_cache_block(struct tfs_sb_info *sbi, uint32_t block)
     
         /* missed, so we need to load it */
         if (i == cache_entries) {        
-		int res;
-	
-                res = tfs_bread(sbi, block, cs->data);
-		if (res < 0)
-			return NULL;
                 /* store it at the head of real cache */
                 cs = head->next;        
+                if (tfs_bread(sbi, block, cs->data))
+			return NULL;
                 cs->block = block;
 	}
     

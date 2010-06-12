@@ -3,16 +3,14 @@
 #include <bitopts.h>
 #include <tfs.h>
 #include <cache.h>
-#include <errno.h>
+#include <err.h>
 
 /* 
  * cache the block bitmap data
  */
 static struct cache_struct * tfs_read_block_bitmap(struct tfs_sb_info *sbi)
 {
-	struct cache_struct *cs;
-
-	cs = get_cache_block(sbi, sbi->s_block_bitmap);
+	struct cache_struct *cs = get_cache_block(sbi, sbi->s_block_bitmap);
 	
 	return cs;
 }
@@ -24,15 +22,16 @@ int tfs_free_block(struct tfs_sb_info *sbi, uint32_t block)
 {
 	struct cache_struct *cs = tfs_read_block_bitmap(sbi);
 	void * bitmap = cs ? cs->data : NULL;
+	int res = 0;
 
 	if (!bitmap) 
 		return -EIO;
 	if (clear_bit(bitmap, block) == 0)
 		printk("ERROR: trying to free an free block!\n");
 	else
-		tfs_bwrite(sbi, sbi->s_block_bitmap, bitmap);
+		res = tfs_bwrite(sbi, sbi->s_block_bitmap, bitmap);
 
-	return 0;
+	return res;
 }
 
 /*
@@ -42,6 +41,7 @@ int tfs_alloc_block(struct tfs_sb_info *sbi, uint32_t block)
 {
 	struct cache_struct *cs = tfs_read_block_bitmap(sbi);
 	void * bitmap = cs ? cs->data : NULL;
+	int res = 0;
 	
 	if (!bitmap)
 		return -EIO;
@@ -51,7 +51,9 @@ int tfs_alloc_block(struct tfs_sb_info *sbi, uint32_t block)
 		block = find_first_zero(bitmap, bitmap + sbi->s_block_size);
 	if (block != -1) {
 		set_bit(bitmap, block);
-		tfs_bwrite(sbi, sbi->s_block_bitmap, bitmap);
+		res = tfs_bwrite(sbi, sbi->s_block_bitmap, bitmap);
+		if (res < 0)
+			return res;
 	} else {
 		return -ENOSPC;
 	}

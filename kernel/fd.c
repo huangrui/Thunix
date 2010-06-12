@@ -505,7 +505,7 @@ int floppy_reads(int sector, void *buf, unsigned int sectors)
 			break;
 		buf += 512;
 	}
-	
+
 	return res;
 }
 
@@ -553,13 +553,13 @@ void floppy_init(void)
 }
 
 /* debug fd read */
-void Debug_rd(void)
+void Debug(void)
 {
 	char buf[512];
 
 	LOG("BUF addr: %p\n", buf);
 
-        floppy_read(70, buf);
+        floppy_read(838, buf);
 	hexdump(buf, 128);
 }
 

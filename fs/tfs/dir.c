@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <malloc.h>
-#include <errno.h>
+#include <err.h>
 #include <tfs.h>
 #include <cache.h>
 #include <dirent.h>
@@ -16,9 +16,17 @@ static inline int tfs_match_entry (const char * const name,
 {
         if (!de->d_inode)
                 return 0;
+	if (strlen(name) != strlen(de->d_name) && strlen(name) != TFS_NAME_LEN)
+		return 0;
         return !strncmp(name, de->d_name, strlen(name));
 }
 
+/*
+ * Returns:
+ * 	NULL, entry not found
+ * 	ERROR, errors happend.
+ * 	cs,   entry found
+ */
 struct cache_struct * tfs_find_entry(struct tfs_sb_info *sbi,
 				     const char *dname,
 				     struct inode *inode,
@@ -33,6 +41,8 @@ struct cache_struct * tfs_find_entry(struct tfs_sb_info *sbi,
 	if (!block)
                 return NULL;
         cs = get_cache_block(sbi, block);
+	if (!cs)
+		return ERR_PTR(-EIO);
         de = (struct tfs_dir_entry *)cs->data;
         
         while(1) {
@@ -40,6 +50,8 @@ struct cache_struct * tfs_find_entry(struct tfs_sb_info *sbi,
 			if ((block = inode->i_data[index++]) < sbi->s_data_area)
                                 return NULL;
                         cs = get_cache_block(sbi, block);
+			if (!cs)
+				return ERR_PTR(-EIO);
                         de = (struct tfs_dir_entry *)cs->data;
 		}
 		if (de->d_inode == 0) {
@@ -70,12 +82,16 @@ int tfs_add_entry(struct tfs_sb_info *sbi, struct inode *dir, const char *name, 
 	if (!(block = dir->i_data[index++]))
 		goto alloc_new_block;
 	cs = get_cache_block(sbi, block);
+	if (!cs)
+		return -EIO;
 	de = (struct tfs_dir_entry *)cs->data;
 	while (1) {
 		if ((void *)de >= cs->data + sbi->s_block_size) {
 			if (!(block = dir->i_data[index++]))
 				break;
 			cs = get_cache_block(sbi, block);
+			if (!cs)
+				return -EIO;
 			de = (struct tfs_dir_entry *)cs->data;
 		}
 		if (!de->d_inode)
@@ -89,13 +105,15 @@ alloc_new_block:
 	/* allocate a new block to hold the new entry */
 	if (!block) {
 		block = tfs_alloc_block(sbi, sbi->s_data_area);
-		if (block == -1)
+		if (block < 0)
 			return -ENOSPC;
 		if (index > TFS_N_BLOCKS)
 			return -EFBIG;
 
 		dir->i_data[index - 1] = block;
 		cs = get_cache_block(sbi, block);
+		if (!cs)
+			return -EIO;
 		de = (struct tfs_dir_entry *)cs->data;
 		memset(cs->data, 0, sbi->s_block_size);
 	}
@@ -110,7 +128,8 @@ alloc_new_block:
 	memcpy(de->d_name, name, strlen(name));
 	
 	/* write the entry back to disk */
-	tfs_bwrite(sbi, block, cs->data);
+	if (tfs_bwrite(sbi, block, cs->data))
+		return -EIO;
 
 	return 0;
 }
@@ -121,28 +140,28 @@ int tfs_mkdir(struct tfs_sb_info *sbi, const char *path)
 	struct inode *dir;
 	struct inode *parent_dir;
 	int dirty;
-	int res = 0;
+	int err = 0;
 
 	dir = tfs_mknod(sbi, path, TFS_DIR, &parent_dir);
-	if ((int)dir <= 0)
-		return -((int)dir);
+	if (IS_ERR(dir))
+		return PTR_ERR(dir);
 
-	res = tfs_add_entry(sbi, dir, ".", dir->i_ino, &dirty);
-	if (res < 0) 
+	err = tfs_add_entry(sbi, dir, ".", dir->i_ino, &dirty);
+	if (err) 
 		goto out;
 
-	res = tfs_add_entry(sbi, dir, "..", parent_dir->i_ino, &dirty);
-	if (res < 0)
-		goto out;	
+	err = tfs_add_entry(sbi, dir, "..", parent_dir->i_ino, &dirty);
+	if (err < 0)
+		goto out;
 
 	if (dirty)
-		res = tfs_iwrite(sbi, dir);
+		err = tfs_iwrite(sbi, dir);
 out:
 	free_inode(dir);
 	if (this_dir->dd_dir->inode != parent_dir)
 		free_inode(parent_dir);
 
-	return res;
+	return err;
 
 }
 
@@ -162,12 +181,12 @@ static int is_empty_dir(struct tfs_sb_info *sbi, struct inode *dir)
 
 int tfs_rmdir(struct tfs_sb_info *sbi, const char *path) 
 {
-	int res;
 	struct inode *dir;
 	struct inode *inode;
 	struct cache_struct *cs;
 	struct tfs_dir_entry *de;
 	const char * base_name = get_base_name(path);
+	int err;
 
 	if (!base_name) {
 		printk("%s: invalid path name!\n", path);
@@ -175,50 +194,63 @@ int tfs_rmdir(struct tfs_sb_info *sbi, const char *path)
 	}
 
 	dir = tfs_namei(sbi, path, LOOKUP_PARENT);
-	if ((int)dir <= 0)
-		return -ENOENT;
+	if (IS_ERR_OR_NULL(dir))
+		return dir ? PTR_ERR(dir) : -ENOENT;
 
 	cs = tfs_find_entry(sbi, base_name, dir, &de);
-	if ((int)cs <= 0)
-		return -ENOENT;
+	if (IS_ERR_OR_NULL(cs)) {
+		err = cs ? PTR_ERR(cs) : -ENOENT;
+		goto error_no_free_inode;
+	}
 
 	inode = tfs_iget_by_inr(sbi, de->d_inode);
-	if ((int)inode <= 0)
-		return -ENOENT;
+	if (IS_ERR(inode)) {
+		err = PTR_ERR(inode);
+		goto error_no_free_inode;
+	}
 
-	if (inode->i_mode != TFS_DIR)
-		return -ENOTDIR;
+	if (inode->i_mode != TFS_DIR) {
+		err = -ENOTDIR;
+		goto error;
+	}
 
-	res = is_empty_dir(sbi, inode);
-	if (res == 0) {
-		return -ENOTEMPTY;
-	} else if (res == -1) {
+	err = is_empty_dir(sbi, inode);
+	if (err == 0) {
+		err = -ENOTEMPTY;
+		goto error;
+	} else if (err == -1) {
 		printk("%s: path correupted: the size is less than two direntry!\n", path);
-		return -1;
+		goto error;
 	}
 	
 	dir->i_size -= sizeof(struct tfs_dir_entry);
-	res = tfs_iwrite(sbi, dir);
-	if (res < 0)
-		return res;
+	err = tfs_iwrite(sbi, dir);
+	if (err)
+		goto error;
 	de->d_inode = 0;
-	res = tfs_bwrite(sbi, cs->block, cs->data);
-	if (res < 0)
-		return res;
-	res = tfs_release_inode(sbi, inode);
+	err = tfs_bwrite(sbi, cs->block, cs->data);
+	if (err)
+		goto error;
+	err = tfs_release_inode(sbi, inode);
 
-	return res;
+error:
+	free_inode(inode);
+error_no_free_inode:
+	if (this_dir->dd_dir->inode != dir)
+		free_inode(dir);
+
+	return err;
 }
 
 
 int tfs_unlink(struct tfs_sb_info *sbi, const char *path)
 {
-	int res;
 	struct inode *dir;
 	struct inode *inode;
 	struct cache_struct *cs;
 	struct tfs_dir_entry *de;
 	const char * base_name = get_base_name(path);
+	int err;
 
 	if (!base_name) {
 		printk("%s: invalid path name!\n", path);
@@ -226,33 +258,44 @@ int tfs_unlink(struct tfs_sb_info *sbi, const char *path)
 	}
 
 	dir = tfs_namei(sbi, path, LOOKUP_PARENT);
-	if ((int)dir <= 0)
-		return -ENOENT;
+	if (IS_ERR_OR_NULL(dir))
+		return dir ? PTR_ERR(dir) : -ENOENT;
 
 	cs = tfs_find_entry(sbi, base_name, dir, &de);
-	if ((int)cs < 0)
-		return -ENOENT;
+	if (IS_ERR_OR_NULL(cs)) {
+		err = cs ? PTR_ERR(cs) : -ENOENT;
+		goto error_no_free_inode;
+	}
 
 	inode = tfs_iget_by_inr(sbi, de->d_inode);
-	if ((int)inode <= 0)
-		return -ENOENT;
+	if (IS_ERR(inode)) {
+		err = PTR_ERR(inode);
+		goto error_no_free_inode;
+	}
 
 	if (inode->i_mode != TFS_FILE) {
 		printk("%s: not a file!\n", path);
-		return -1;
+		goto error;
 	}
 
 	dir->i_size -= sizeof(struct tfs_dir_entry);
-	res = tfs_iwrite(sbi, dir);
-	if (res < 0)
-		return res;
+	err = tfs_iwrite(sbi, dir);
+	if (err)
+		goto error;
 	de->d_inode = 0;
-	res = tfs_bwrite(sbi, cs->block, cs->data);
-	if (res < 0)
-		return res;
-	res = tfs_release_inode(sbi, inode);
-	
-	return res;
+	err = tfs_bwrite(sbi, cs->block, cs->data);
+	if (err)
+		goto error;
+	err = tfs_release_inode(sbi, inode);
+
+error:
+	free_inode(inode);
+error_no_free_inode:
+	if (this_dir->dd_dir->inode != dir)
+		free_inode(dir);
+
+
+	return err;
 }
 
 
@@ -263,15 +306,14 @@ DIR *tfs_opendir(struct tfs_sb_info *sbi, const char *path)
 {
 	DIR *dir = malloc(sizeof(*dir));
 	
-	if (!dir) {
-		printk("malloc for DIR structure error!\n");
-		return NULL;
-	}
+	if (!dir)
+		return ERR_PTR(-ENOMEM);
 
 	dir->dd_dir = tfs_open(sbi, path, 0);
-	if (!dir->dd_dir) {
+	if (IS_ERR(dir->dd_dir)) {
+		int err = PTR_ERR(dir->dd_dir);
 		free(dir);
-		return NULL;
+		return ERR_PTR(err);
 	}
 
 	return dir;

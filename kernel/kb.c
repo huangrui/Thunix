@@ -127,7 +127,7 @@ static unsigned char ctl_map[256] = {
 
 extern void parse_command (char *);
 static int index = 0;
-char command_buffer[20] = {'\0',};
+char command_buffer[512] = {'\0',};
 
 
 /* printable char */

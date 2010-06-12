@@ -11,6 +11,7 @@
 #include <cache.h>
 #include <dirent.h>
 #include <fd.h>
+#include <err.h>
 /*#include <sched.h>*/
 //#include <rd.h>
 //#include <fs_ext2.h>
@@ -181,7 +182,7 @@ void init(void)
 
 	printk("Cd into root... ");
 	this_dir = tfs_opendir(tfs_sbi, "/");
-	if (!this_dir) {
+	if (IS_ERR(this_dir)) {
 		printk("cd into root dir failed!\n");
 	}
 	printk("\t\t\t%s\n", ok);

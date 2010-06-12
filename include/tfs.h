@@ -115,7 +115,7 @@ extern struct tfs_sb_info *tfs_sbi;
 
 #define TFS_INODES_PER_BLOCK(sbi) (sbi->s_inodes_per_block)
 
-#define TFS_DEBUG printk
+#define TFS_DEBUG //printk
 
 #define roundup(x, y) ((x) / (y) + (((x) % (y)) ? 1 : 0))
 

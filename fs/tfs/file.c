@@ -1,10 +1,10 @@
 #include <stdio.h>
 #include <string.h>
 #include <malloc.h>
-
-#include "tfs.h"
-#include "cache.h"
-#include "file.h"
+#include <err.h>
+#include <tfs.h>
+#include <cache.h>
+#include <file.h>
 
 
 struct file *tfs_open(struct tfs_sb_info *sbi, const char *filename, uint32_t flag)
@@ -13,16 +13,13 @@ struct file *tfs_open(struct tfs_sb_info *sbi, const char *filename, uint32_t fl
 	struct file *file;
 
 	inode = tfs_namei(sbi, filename, flag);
-	if (!inode) {
-		printk("ERROR: open file: %s falied!\n", filename);
-		return NULL;
-	}	
+	if (IS_ERR_OR_NULL(inode))
+		return inode ? ERR_CAST(inode) : ERR_PTR(-ENOENT);	
 
 	file = malloc(sizeof(*file));
 	if (!file) {
-		printk("malloc file structure error!\n");
 		free_inode(inode);
-		return NULL;
+		return ERR_PTR(-ENOMEM);
 	}
 
 	file->sbi    = sbi;
@@ -48,30 +45,36 @@ uint32_t fstk_lseek(struct file *file, uint32_t off, int mode)
 int tfs_read(struct file *file, void *buf, uint32_t count)
 {
 	struct tfs_sb_info *sbi = file->sbi;
+	struct cache_struct *cs;
 	int blocks = roundup(count, sbi->s_block_size);
 	int index  = file->offset >> sbi->s_block_shift;
-	int block  = file->inode->i_data[index++];
+	int block  = tfs_bmap(file->inode, index++);
 	int bufoff = file->offset & (sbi->s_block_size - 1);
 	int bytes_read = 0;
 
 	if (!blocks)
 		return -1;
 	if (!block)
-		return -1;
+		return 0;
 	if (file->offset >= file->inode->i_size)
 		return -1;
-	tfs_bread(sbi, block, buf);
+	cs = get_cache_block(sbi, block);
+	if (!cs)
+		return -EIO;
 	bytes_read = sbi->s_block_size - bufoff;
-	memcpy(buf, buf + bufoff, bytes_read);
+	memcpy(buf, cs->data + bufoff, bytes_read);
 	buf          += bytes_read;
 	file->offset += bytes_read;
 	blocks--;
 
 	while (blocks--) {
-		block = file->inode->i_data[index++];
+		block = tfs_bmap(file->inode, index++);
 		if (!block)
 			break;
-		tfs_bread(sbi, block, buf);
+		cs = get_cache_block(sbi, block);
+		if (!cs)
+			return -EIO;
+		memcpy(buf, cs->data, sbi->s_block_size);
 		bytes_read   += sbi->s_block_size;
 		file->offset += sbi->s_block_size;
 		buf          += sbi->s_block_size;
@@ -100,17 +103,17 @@ int tfs_write(struct file *file, void *buf, uint32_t count)
 	if (!block) {
 		if (index - 1 < TFS_N_BLOCKS) {
 			block = tfs_alloc_block(sbi, sbi->s_data_area);
-			if (block == -1) {
-				printk("allocating block for new file faile! OUT OF SPACE!\n");
-				return -1;
-			}
+			if (block < 0)
+				return -ENOSPC;
 			file->inode->i_data[index - 1] = block;
 		} else  {
 			/* file too big */
-			return -1;
+			return -EFBIG;
 		}
 	}
 	cs = get_cache_block(sbi, block);
+	if (!cs)
+		return -EIO;
 	bytes_written = min(sbi->s_block_size, count) - bufoff;
 	memcpy(cs->data + bufoff, buf, bytes_written);
 	buf	     += bytes_written;
@@ -118,43 +121,41 @@ int tfs_write(struct file *file, void *buf, uint32_t count)
 	count        -= bytes_written;
 	file->inode->i_size += bytes_written;
 	/* write back to disk */
-	tfs_bwrite(sbi, block, cs->data);
+	if (tfs_bwrite(sbi, block, cs->data))
+		return -EIO;
+		
 	blocks--;
-
 	while (blocks--) {
 		int bytes_need;
 		block = tfs_bmap(file->inode, index++);
 		if (!block) {
 			if (index - 1 < TFS_N_BLOCKS) {
 				block = tfs_alloc_block(sbi, sbi->s_data_area);
-				if (block == -1) {
-					printk("allocating block for new file faile: out of space!\n");
-					goto err;
-				}
+				if (block < 0)
+					return -ENOSPC;
 				file->inode->i_data[index - 1] = block;
 			} else { 
 				/* fle too big */
-				goto err;
+				return -EFBIG;
 			}
 		}
 		bytes_need = min(sbi->s_block_size, count);
 		cs = get_cache_block(sbi, block);
+		if (!cs)
+			return -EIO;
 		memcpy(cs->data, buf, bytes_need);
 		bytes_written += bytes_need;
 		file->offset  += bytes_need;
 		buf           += bytes_need;
 		file->inode->i_size += bytes_need;
-		tfs_bwrite(sbi, block, cs->data);
+		if (tfs_bwrite(sbi, block, cs->data))
+			return -EIO;
 	}
 
-done:
-	tfs_iwrite(sbi, file->inode);
+	if (tfs_iwrite(sbi, file->inode))
+		return -EIO;
 	
 	return bytes_written;
-
-err:
-	bytes_written = -1;
-	goto done;
 }
 
 void tfs_close(struct file *file)

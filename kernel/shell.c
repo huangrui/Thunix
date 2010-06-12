@@ -270,6 +270,7 @@ void run_command(char *command, int argc, char **argv)
 	else if ( is_command(command, "debug") ) {
 		struct sys_test st = {12, "Aleaxander"};
 		test3(512, "Hello thunix system call!", &st);
+		Debug();
 	}
 #endif
         else
