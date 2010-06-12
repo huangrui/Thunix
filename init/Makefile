@@ -1,5 +1,5 @@
 AS	= as -I../include
-CC	= gcc -nostdinc -I../include -Wall -Wno-unused
+CC	= gcc -g -nostdinc -I../include -Wall -Wno-unused
 
 DIRNAME = init
 

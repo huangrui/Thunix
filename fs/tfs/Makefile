@@ -1,4 +1,4 @@
-CC	= gcc -nostdinc -I../../include -Wall -Wno-unused
+CC	= gcc -g -nostdinc -I../../include -Wall -Wno-unused
 LD	= ld
 LDFLAGS = --oformat binary -N
 

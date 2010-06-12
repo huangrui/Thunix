@@ -1,5 +1,6 @@
 LD	= ld
-LDFLAGS = --oformat binary -N
+OBJCOPY = objcopy
+LDFLAGS = -N
 MAKEFLAGS +=  --no-print-directory
 
 ifeq ("$(origin V)", "command line")
@@ -19,17 +20,16 @@ thunix.img: boot.img kernel.img
 	cat boot.img kernel.img > thunix.img
 	(./gen-test.sh >/dev/null)
 
-user-progs:
-	@printf "\n\n=== Generating user space programs ===\n"
-	(cd user; make)
-	cp user/user-test ./
+%.img: %.elf
+	${OBJCOPY} -O binary $< $@
 
-boot.img: boot/bootsect.o
+boot.elf: boot/bootsect.o
 	@printf "%8s   %s\n" "LD" $@
 	${LD} ${LDFLAGS} -e start -Ttext 0x7c00 -o $@ $<
-kernel.img: ${KERNEL_OBJS}
+
+kernel.elf: ${KERNEL_OBJS}
 	@printf "%8s   %s\n" "LD" $@
-	${LD} ${LDFLAGS} -e pm_mode -Ttext 0x0000 -o $@ ${KERNEL_OBJS}
+	${LD} ${LDFLAGS} -e pm_mode -Ttext 0x0000 -o $@ ${KERNEL_OBJS} -M > thunix.map
 
 boot/bootsect.o:
 	(cd boot; make)
@@ -44,6 +44,12 @@ mm/mm.o:
 
 doc:
 	(cd doc; make)
+
+
+user-progs:
+	@printf "\n\n=== Generating user space programs ===\n"
+	(cd user; make)
+	cp user/user-test ./
 
 release: 
 	./release.sh

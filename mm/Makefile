@@ -1,8 +1,8 @@
 AS	= as -I../include
-CC	= gcc -nostdinc -I../include -Wall -Wno-unused
+CC	= gcc -g -nostdinc -I../include -Wall -Wno-unused
 LD	= ld
 LDFLAGS = --oformat binary -N
-CPP	=gcc -E -nostdinc -I../include
+CPP	=gcc -g -E -nostdinc -I../include
 
 DIRNAME = mm
 

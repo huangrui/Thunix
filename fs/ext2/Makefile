@@ -1,8 +1,8 @@
 AS	= as -I../include
-CC	= gcc -nostdinc -I../include #-Wall
+CC	= gcc -g -nostdinc -I../include #-Wall
 LD	= ld
 LDFLAGS = --oformat binary -N
-CPP	=gcc -E -nostdinc -I../include
+CPP	=gcc -g -E -nostdinc -I../include
 
 OBJS    =bitmap.o balloc.o ialloc.o inode.o namei.o ext2.o \
 	ramdisk.o ram_mke2fs.o dir.o ls.o 
