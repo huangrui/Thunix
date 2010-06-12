@@ -1,0 +1,13 @@
+=== V0.5 released === (2010-06-12)
+	* basic syscall implemented
+	* simple error handle system implemented
+	* exec binaly program from disk supported
+
+=== V0.4 released === 
+	* Add a LRU cache system
+	* Add tfs file system support
+	* Cleanup Makefile
+
+=== V0.3 released ===
+	* Add malloc stuff
+	* Add hexdump lib function

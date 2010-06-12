@@ -1,5 +1,4 @@
-1. Add system call support
-2. Add exec system call
+1. Add complete system call support
+2. Add complete exec system call
 3. Add a robust shell
 4. Add VFS
-5. Add errorno system
