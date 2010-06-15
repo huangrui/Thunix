@@ -15,8 +15,8 @@ KERNEL_OBJS = boot/head.o init/init.o kernel/kernel.o mm/mm.o fs/fs.o
 
 all: thunix.img user-progs
 
-thunix.img: boot.img kernel.img
-	@printf "%8s   %s\n" "MK" $@
+thunix.img: boot.img kernel.img user-progs
+	@printf "\n%8s   %s\n" "MK" $@
 	cat boot.img kernel.img > thunix.img
 	(./gen-test.sh >/dev/null)
 
@@ -47,7 +47,7 @@ doc:
 
 
 user-progs:
-	@printf "\n\n=== Generating user space programs ===\n"
+	@printf "\n"
 	${MAKE} --directory=user
 	cp user/user-test ./
 

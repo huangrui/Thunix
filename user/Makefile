@@ -7,7 +7,7 @@ DIRNAME = user
 
 OBJS = user-test.o usys.o
 
-.PHONY: all
+.PHONY: all clean
 
 all: user-test
 
