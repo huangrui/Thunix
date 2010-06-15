@@ -9,7 +9,7 @@ else
 	MAKEFLAGS += --quiet
 endif
 
-KERNEL_OBJS = boot/head.o init/init.o kernel/kernel.o mm/mm.o fs/fs.o
+KERNEL_OBJS = boot/head.o init/init.o kernel/kernel.o mm/mm.o fs/fs.o lib/lib.a
 
 .PHONY: all ${KERNEL_OBJS} clean backup release
 
@@ -41,6 +41,8 @@ fs/fs.o:
 	${MAKE} --directory=fs
 mm/mm.o:
 	${MAKE} --directory=mm
+lib/lib.a:
+	${MAKE} --directory=lib
 
 doc:
 	${MAKE} --directory=doc
@@ -64,6 +66,7 @@ clean:
 	(cd kernel; make clean)
 	(cd fs; make clean)
 	(cd mm; make clean)
+	(cd lib; make clean)
 	(cd doc; make clean)
 	(cd user; make clean)
 

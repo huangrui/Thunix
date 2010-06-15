@@ -1,0 +1,4 @@
+The generic lib function used in Thunix
+
+NOTE: these lib functions here should also be used by user-progs file used in
+thunix/user directory. So please don't add kernel specificed stuff here.
