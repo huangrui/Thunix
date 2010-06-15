@@ -1,4 +1,10 @@
-1. Add complete system call support
-2. Add complete exec system call
-3. Add a robust shell
-4. Add VFS
+The following task should be done in order(or maybe not) before
+the first version released.
+
+1. VFS  		(0.6)
+2. robuust shell	(0.7)
+3. exec			(0.8) 
+4. sys call		(0.9)
+
+== And the final 1.0 ==
+5. port some coreutils from GNU like cp, cat and so on into thunix.
