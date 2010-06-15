@@ -11,7 +11,7 @@ endif
 
 KERNEL_OBJS = boot/head.o init/init.o kernel/kernel.o mm/mm.o fs/fs.o
 
-.PHONY :clean backup release
+.PHONY: all ${KERNEL_OBJS} clean backup release
 
 all: thunix.img user-progs
 
@@ -32,23 +32,23 @@ kernel.elf: ${KERNEL_OBJS}
 	${LD} ${LDFLAGS} -e pm_mode -Ttext 0x0000 -o $@ ${KERNEL_OBJS} -M > thunix.map
 
 boot/bootsect.o:
-	(cd boot; make)
+	${MAKE} --directory=boot
 init/init.o:
-	(cd init; make)
+	${MAKE} --directory=init
 kernel/kernel.o:
-	(cd kernel; make)
+	${MAKE} --directory=kernel
 fs/fs.o:
-	(cd fs; make)
+	${MAKE} --directory=fs
 mm/mm.o:
-	(cd mm; make)
+	${MAKE} --directory=mm
 
 doc:
-	(cd doc; make)
+	${MAKE} --directory=doc
 
 
 user-progs:
 	@printf "\n\n=== Generating user space programs ===\n"
-	(cd user; make)
+	${MAKE} --directory=user
 	cp user/user-test ./
 
 release: 
@@ -58,7 +58,7 @@ bochs:
 	bochs -qf bochsrc 
 clean:
 	@printf "%8s   *.o *~ boot.img kernle.img *.elf\n" "RM" 
-	rm -f bochsout.txt boot.img kernel.img *~ include/*~ *.elf
+	rm -f bochsout.txt boot.img kernel.img *~ include/*~ *.elf *.map user-test
 	(cd boot; make clean)
 	(cd init; make clean)
 	(cd kernel; make clean)
