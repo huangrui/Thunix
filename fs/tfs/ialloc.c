@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <malloc.h>
 #include <bitopts.h>
+#include <fs.h>
 #include <tfs.h>
 #include <cache.h>
 #include <err.h>

@@ -11,9 +11,6 @@
 #define TFS_FILE	0x1
 #define TFS_DIR		0x2
 
-/* namei: path lookup flags */
-#define LOOKUP_PARENT  	0x1
-#define LOOKUP_CREATE	0x2
 
 /* just support I_FILE and I_DIR only currently */
 enum tfs_inode_mode { I_FILE, I_DIR, I_UNKNOWN };
@@ -42,21 +39,6 @@ struct tfs_inode {
 	uint32_t i_block[TFS_N_BLOCKS]; /* block address of file's count */
 	uint32_t i_flags;               /* flags */
 	uint32_t i_reserved[1];
-};
-
-/* 
- * The inode structure in memory, including the detail file information 
- */
-struct inode {
-        int          i_mode;   /* FILE or DIR */
-        uint32_t     i_size;
-        uint32_t     i_ino;    /* Inode number */
-        uint32_t     i_atime;  /* Access time */
-        uint32_t     i_mtime;  /* Modify time */
-        uint32_t     i_ctime;  /* Create time */
-        uint32_t     i_dtime;  /* Delete time */
-        uint32_t *   i_data;   /* The block address array where the file stores */
-        uint32_t     i_flags;
 };
 
 /* The max lenght of each file name */
@@ -115,9 +97,16 @@ extern struct tfs_sb_info *tfs_sbi;
 
 #define TFS_INODES_PER_BLOCK(sbi) (sbi->s_inodes_per_block)
 
-#define TFS_DEBUG //printk
+#define TFS_DEBUG printk
 
 #define roundup(x, y) ((x) / (y) + (((x) % (y)) ? 1 : 0))
+
+struct fs;
+
+static inline struct tfs_sb_info * TFS_SBI(struct fs *fs)
+{
+	return fs->sb;
+}
 
 /* tfs_diskio.c */
 extern int tfs_bread(struct tfs_sb_info *, uint32_t , void *);
@@ -136,26 +125,25 @@ int tfs_free_block(struct tfs_sb_info *, uint32_t);
 
 
 /* dir.c */
-struct cache_struct *tfs_find_entry(struct tfs_sb_info *, const char *, struct inode *, struct tfs_dir_entry **);
-int tfs_add_entry(struct tfs_sb_info *, struct inode *, const char *, int , int *);
-int tfs_mkdir(struct tfs_sb_info *, const char *);
-int tfs_rmdir(struct tfs_sb_info *, const char *);
-int tfs_unlink(struct tfs_sb_info *, const char *);
+struct cache_struct *tfs_find_entry(struct inode *, const char *, struct tfs_dir_entry **);
+int tfs_add_entry(struct inode *, const char *, int , int *);
+int tfs_mkdir(struct inode *, const char *);
+int tfs_rmdir(struct inode *, const char *);
+int tfs_unlink(struct inode *, const char *);
 
 /* inode.c */
-struct inode *new_inode(int);
-void free_inode(struct inode *);
-struct inode * tfs_new_inode(struct tfs_sb_info *, int);
+struct inode * tfs_new_inode(struct inode *, int, int);
 int tfs_release_inode(struct tfs_sb_info *, struct inode *);
 struct inode *tfs_root_init(struct tfs_sb_info *);
-struct inode *tfs_iget_root(struct tfs_sb_info *);
-struct inode *tfs_iget_by_inr(struct tfs_sb_info *, int);
-struct inode *tfs_iget(struct tfs_sb_info *, char *, struct inode *);
-struct inode *tfs_namei(struct tfs_sb_info *, const char *, uint32_t);
+struct inode *tfs_iget_root(struct fs *);
+struct inode *tfs_iget_by_inr(struct fs *, int);
+struct inode *tfs_iget(const char *, struct inode *);
 uint32_t tfs_bmap(struct inode *, int);
-int tfs_iwrite(struct tfs_sb_info *, struct inode *);
-struct inode *__mknod(struct tfs_sb_info *, struct inode *, const char *, int);
-struct inode *tfs_mknod(struct tfs_sb_info *, const char *, int, struct inode **);
-const char *get_base_name(const char *);
+int tfs_iwrite(struct inode *);
+struct inode *tfs_mknod(struct inode *, const char *, int);
+
+
+extern struct inode_operations tfs_inode_ops;
+extern struct file_operations tfs_file_ops;
 
 #endif /* tfs.h */

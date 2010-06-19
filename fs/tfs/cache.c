@@ -8,6 +8,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <fs.h>
 #include <tfs.h>
 #include <cache.h>
 

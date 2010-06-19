@@ -173,6 +173,8 @@ void free(void *ptr)
         struct mem_struct *prev = mm->prev;
         struct mem_struct *next = get_next(mm);
 
+	if (mm->free == 1)
+		return;
         if (!prev)
                 mm = try_merge_back(mm);
         else if (!next)
@@ -199,6 +201,10 @@ void check_mem(void)
         
         printk("____________\n");
         while (next) {
+		if (next->size == 0) {
+			printk(" BAD ");
+			break;
+		}
                 printk("%-6d  %s\n", next->size, next->free ? "Free" : "Notf");
                 next = get_next(next);
         }

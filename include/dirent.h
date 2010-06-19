@@ -3,7 +3,6 @@
 
 #include <stdint.h>
 
-#include "file.h"
 
 struct dirent {
         uint32_t d_ino;
@@ -14,13 +13,15 @@ struct dirent {
 };
 
 
+struct file;
+
 typedef struct {
         struct file *dd_dir;
 } DIR;
 
 
-DIR * tfs_opendir(struct tfs_sb_info *, const char *);
-struct dirent * tfs_readdir(DIR *);
+DIR * opendir(const char *);
+struct dirent * tfs_readdir(struct file *);
 void tfs_closedir(DIR *);
 
 extern DIR *this_dir;

@@ -1,28 +1,16 @@
 #include <stdio.h>
 #include <string.h>
+#include <fs.h>
 #include <tfs.h>
-#include <file.h>
 #include <dirent.h>
 #include <err.h>
 
-
-static struct file * tfs_file_open(struct tfs_sb_info *sbi, char *filename, uint32_t flags)
-{
-	struct file *file;
-
-	file = tfs_open(sbi, filename, flags);
-	if (IS_ERR(file))
-		return ERR_CAST(file);	
-
-	return file;
-}
-
-void cd(struct tfs_sb_info *sbi, char *dst_dir)
+void cd(char *dst_dir)
 {
 	DIR *old = this_dir;
 
 	if (*dst_dir) {
-		this_dir = tfs_opendir(sbi, dst_dir);	
+		this_dir = opendir(dst_dir);
 		if (IS_ERR(this_dir)) {
 			/*
 			 * FIXME: add error code handler here
@@ -41,28 +29,30 @@ void cd(struct tfs_sb_info *sbi, char *dst_dir)
 		}
 	}
 	
+	root_fs()->pwd = this_dir->dd_dir->inode;
 	TFS_DEBUG("CDed in '%s' with inode '%d'\n", dst_dir, this_dir->dd_dir->inode->i_ino);
 }
 
 
-void cat(struct tfs_sb_info *sbi, char *filename)
+void cat(char *filename)
 {
-	struct file *file = tfs_file_open(sbi, filename, 0);
+	int fd = sys_open(filename, 0);
 	char buf[1024];
 	int bytes_read;
 
-	if (IS_ERR(file)) {
-		printk("open file %s error:%d\n", filename, PTR_ERR(file));
+	if (fd < 0) {
+		printk("open file %s error:%d\n", filename, fd);
 		return;
 	}
-	while ((bytes_read = tfs_read(file, buf, sizeof(buf))) > 0)
+
+	while ((bytes_read = sys_read(fd, buf, sizeof(buf))) > 0)
 		printk("%s", buf);
 	printk("\n");
 }
 
-void ls(struct tfs_sb_info *sbi, char *filename)
+void ls(char *filename)
 {
-	DIR *dir = tfs_opendir(sbi, filename);
+	DIR *dir = opendir(filename);
 	struct dirent *de;
 	
 	if (IS_ERR(dir)) {
@@ -79,7 +69,7 @@ void ls(struct tfs_sb_info *sbi, char *filename)
 		return;
 	}
 
-	while ((de = tfs_readdir(dir))) {
+	while ((de = tfs_readdir(dir->dd_dir))) {
 		printk("%6d\t %s\n", de->d_ino, de->d_name);
 		free(de);
 	}
@@ -87,63 +77,66 @@ void ls(struct tfs_sb_info *sbi, char *filename)
 	tfs_closedir(dir);
 }
 
-void mkdir(struct tfs_sb_info *sbi, char *filename)
+void mkdir(char *filename)
 {
-	int err = tfs_mkdir(sbi, filename);
+	int err = sys_mkdir(filename);
 	if (err)
 		printk("mkdir error: %d\n", err);
 }
 
-void rmdir(struct tfs_sb_info *sbi, char *filename)
+void rmdir(char *filename)
 {
-	int err = tfs_rmdir(sbi, filename);
+	int err = sys_rmdir(filename);
 	if (err)
 		printk("rmdir error: %d\n", err);
 }
 
-void rm(struct tfs_sb_info *sbi, char *filename)
+void rm(char *filename)
 {
-	int err = tfs_unlink(sbi, filename);
+	int err = sys_unlink(filename);
 	if (err)
 		printk("rm file error: %d\n", err);
 }
 
-void touch (struct tfs_sb_info *sbi, char *filename)
+void touch (char *filename)
 {
-	struct file *file = tfs_file_open(sbi, filename, LOOKUP_CREATE);
-	if (IS_ERR(file)) printk("touch file error: %d\n", PTR_ERR(file));
+	int fd = sys_open(filename, LOOKUP_CREATE);
+	if (fd < 0)
+		printk("touch file error: %d\n", fd);
 }
 
 
-void cp(struct tfs_sb_info *sbi, char *from, char *to)
+void cp(char *from, char *to)
 {
 	char buf[1024];
 	int count;
-	struct file *from_file;
-	struct file *to_file;
+	int from_fd, to_fd;
 
 
-	from_file = tfs_file_open(sbi, from, 0);
-	if (IS_ERR(from_file)) {
-		printk("open file %s error:%d\n", from, PTR_ERR(from_file));
+	from_fd = sys_open(from, 0);
+	if (from_fd < 0) {
+		printk("open file %s error:%d\n", from, from_fd);
 		return;
 	}
-	to_file = tfs_file_open(sbi, to, LOOKUP_CREATE);
-	if (IS_ERR(to_file)) {
-		printk("open file %s error: %d\n", to, PTR_ERR(to_file));
-		tfs_close(from_file);
+	to_fd = sys_open(to, LOOKUP_CREATE);
+	if (to_fd < 0) {
+		printk("open file %s error: %d\n", to, to_fd);
+		sys_close(from_fd);
 		return;
 	}
+
+	TFS_DEBUG("from_fd: %d, to_fd: %d\n", from_fd, to_fd);
 	
-	while ((count = tfs_read(from_file, buf, sizeof(buf))) > 0) {
-		count = tfs_write(to_file, buf, count);
+	while ((count = sys_read(from_fd, buf, sizeof(buf))) > 0) {
+		TFS_DEBUG("  == %d bytes readn!\n", count);
+		count = sys_write(to_fd, buf, count);
 		if (count < 0) 
-			printk("write error!\n");
+			TFS_DEBUG("write error!\n");
 		else
-			printk("  == %d bytes written!\n", count);
+			TFS_DEBUG("  == %d bytes written!\n", count);
 	}
 
-	tfs_close(from_file);
-	tfs_close(to_file);
+	sys_close(from_fd);
+	sys_close(to_fd);
 }
 

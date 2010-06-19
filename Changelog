@@ -1,3 +1,6 @@
+2010-06-19 Liu Aleaxander <Aleaxander@gmail.com>
+	* Implement VFS layer
+
 2010-06-15 Liu Aleaxander <Aleaxander@gmail.com>
 	* Move the generic lib funtions into lib/ directory.
 	    lib/string.c

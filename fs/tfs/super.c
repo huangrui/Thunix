@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <malloc.h>
+#include <fs.h>
 #include <tfs.h>
 #include <fd.h>
 

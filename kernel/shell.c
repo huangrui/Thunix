@@ -13,9 +13,8 @@
 #include <console.h>
 #include <stdio.h>
 #include <string.h>
-
+#include <fs.h>
 #include <tfs.h>
-#include <file.h>
 #include <hexdump.h>
 #include <unistd.h>
 
@@ -152,9 +151,9 @@ static void date()
                );
 }
 
-int exec(struct tfs_sb_info *sbi, char *filename)
+int exec(char *filename)
 {
-	struct file *file = tfs_open(sbi, filename, 0);
+	int fd = sys_open(filename, 0);
 
 	/*
  	 * The current exec plan is: load the binary file to 16M,
@@ -167,13 +166,13 @@ int exec(struct tfs_sb_info *sbi, char *filename)
 	int bytes_read;
 	int (*entry)(void);
 
-	if (!file) {
-		printk("tfs_open: open file %s error!\n", filename);
+	if (fd < 0) {
+		printk("open: open file %s error(%d)!\n", filename, fd);
 		return -1;
 	}
 
-	bytes_read = tfs_read(file, exec_buf, 512);
-	tfs_close(file);
+	bytes_read = sys_read(fd, exec_buf, 512);
+	sys_close(fd);
 
 	entry = (int(*)(void))(exec_buf);
 
@@ -183,14 +182,14 @@ int exec(struct tfs_sb_info *sbi, char *filename)
 
 extern void cls(void);
 extern void reboot();
-extern void ls(struct tfs_sb_info *sbi, char *);
-extern void cd(struct tfs_sb_info *sbi, char *);
-extern void cp(struct tfs_sb_info *sbi, char *, char *);
-extern void cat(struct tfs_sb_info *sbi, char *);
-extern void mkdir(struct tfs_sb_info *sbi, char *);
-extern void rmdir(struct tfs_sb_info *sbi, char *);
-extern void rm(struct tfs_sb_info *sbi, char *);
-extern void touch(struct tfs_sb_info *sbi, char *);
+extern void ls(char *);
+extern void cd(char *);
+extern void cp(char *, char *);
+extern void cat(char *);
+extern void mkdir(char *);
+extern void rmdir(char *);
+extern void rm(char *);
+extern void touch(char *);
 extern void halt(void);
 void run_command(char *command, int argc, char **argv)
 {
@@ -200,19 +199,19 @@ void run_command(char *command, int argc, char **argv)
                 about();
 		
 	else if ( is_command(command, "cat") )
-		cat(tfs_sbi, argv[1]);
+		cat(argv[1]);
 	else if ( is_command(command, "cd") )
-		cd(tfs_sbi, argv[1]);
+		cd(argv[1]);
 
         else if (is_command(command, "clear") )
                 cls();
 	else if (is_command(command, "cp") )
-		cp(tfs_sbi, argv[1], argv[2]);
+		cp(argv[1], argv[2]);
 
         else if (is_command(command, "date") )
                 date();
 	else if (is_command(command, "exec") )
-		exec(tfs_sbi, argv[1]);
+		exec(argv[1]);
 
         else if (is_command(command, "halt") )
                 halt();
@@ -240,25 +239,25 @@ void run_command(char *command, int argc, char **argv)
                 if (argc != 2) {
                         printk("mkdir usage: mkdir dir\n");
                 } else {
-			mkdir(tfs_sbi, argv[1]);	
+			mkdir(argv[1]);	
                 }
         }
 	else if ( is_command(command, "rmdir") ) {
-		rmdir(tfs_sbi, argv[1]);
+		rmdir(argv[1]);
 	} 
 
 	else if ( is_command(command, "rm") ) {
-		rm(tfs_sbi, argv[1]);
+		rm(argv[1]);
 
 	}
 	else if ( is_command(command, "touch") ) {
-		touch(tfs_sbi, argv[1]);
+		touch(argv[1]);
 	}
         
         else if ( is_command(command, "ls") ) {
 		if (argc == 1)
 			argv[1] = ".";
-		ls(tfs_sbi, argv[1]);
+		ls(argv[1]);
         }
 
         else if ( is_command(command, "version") )

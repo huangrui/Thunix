@@ -7,6 +7,7 @@
 #include <timer.h>
 #include <time.h>
 #include <thunix.h>
+#include <fs.h>
 #include <tfs.h>
 #include <cache.h>
 #include <dirent.h>
@@ -141,12 +142,12 @@ char *flp_msg  = "Floppy initialization ...";
 //char *ram_mke2fs_msg = "Making Ram ext2 filesystem ...";
 
 
-struct tfs_sb_info *tfs_sbi;
 
 void init(void)
 {
         char ok[] = "[OK]";
         unsigned long startup_time;
+	struct fs *fs;
         struct tm time;
         
         cli();
@@ -173,18 +174,22 @@ void init(void)
         printk("\t\t%s\n", ok);
 
 	printk("mounting tfs image as root fs...");
-	tfs_sbi = tfs_mount();
+	fs = fs_init();
 	printk("\t%s\n", ok);
 
 	printk("Cache system initialiaztion...");
-	cache_init(tfs_sbi);
+	cache_init(TFS_SBI(fs));
 	printk("\t\t%s\n", ok);
 
+	fs->root = tfs_iget_root(fs);
+	fs->pwd = fs->root;
+	
+	memset(fds, 0, 32);
+
 	printk("Cd into root... ");
-	this_dir = tfs_opendir(tfs_sbi, "/");
-	if (IS_ERR(this_dir)) {
-		printk("cd into root dir failed!\n");
-	}
+	this_dir = opendir("/");
+	if (IS_ERR(this_dir))
+		printk("cd into root dir failed(%d)!\n", PTR_ERR(this_dir));
 	printk("\t\t\t%s\n", ok);
 
 	

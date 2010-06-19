@@ -1,6 +1,5 @@
 CC	= gcc -g -nostdinc -I../../include -Wall -Wno-unused
 LD	= ld
-LDFLAGS = --oformat binary -N
 
 DIRNAME = fs/tfs
 
@@ -11,9 +10,10 @@ all: tfs.o
 tfs.o: ${OBJS} 
 	@printf '%8s   %s\n' 'LD' ${DIRNAME}/$@
 	${LD} -r -o $@ ${OBJS}
-.c.o:
+
+%.o: %.c
 	@printf '%8s   %s\n' 'CC' ${DIRNAME}/$@
-	${CC} -c -o $*.o $<
+	${CC} -c -o $@ $<
 
 
 clean:
