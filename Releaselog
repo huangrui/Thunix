@@ -1,3 +1,8 @@
+=== V0.6 released === (2010-06-26)
+	* VFS layer added
+	* sys_chdir added
+	* sys_pwd added
+
 === V0.5 released === (2010-06-12)
 	* basic syscall implemented
 	* simple error handle system implemented
