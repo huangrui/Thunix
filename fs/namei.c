@@ -123,8 +123,16 @@ int sys_rmdir(const char *pathname)
 
 int sys_chdir(const char *pathname)
 {
-	struct inode * inode = namei(pathname, 0);
-	
+	struct inode * inode;
+	char *cwd;
+
+	while (*pathname && *pathname == '.' && *(pathname + 1) == '/')
+			pathname += 2;
+	/* If we are changing to current dir, then just do nothing */
+	if (*pathname == '.' && !*(pathname + 1))
+		return 0;
+
+	inode = namei(pathname, 0);
 	if (IS_ERR_OR_NULL(inode))
 		return inode ? PTR_ERR(inode) : -ENOENT;
 	if (!IS_DIR(inode)) {
@@ -134,9 +142,42 @@ int sys_chdir(const char *pathname)
 
 	free_inode(root_fs()->pwd);
 	root_fs()->pwd = inode;
+
+	cwd = root_fs()->cwd;
+	if (*pathname == '/') {
+		strcpy(cwd, pathname);
+	} else if (strcmp(pathname, "..") == 0) {
+		char *p = strrchr(cwd, '/');
+		
+		/* At least we have a '/' char */
+		if (!p) 
+			return -EINVAL;
+
+		if (p == cwd)
+			*(p + 1) = '\0';
+		else
+			*p = '\0';
+	} else {
+		strcat(cwd, pathname);
+	}
+
 	return 0;
 }
-	
+
+/*
+ * The sys call to get the current directory
+ */
+int sys_getcwd(char *buf, int size)
+{
+	int len = strlen(root_fs()->cwd);
+
+	if (size <= 0)
+		return -EINVAL;
+	if (len > size)
+		return -ERANGE;
+	strcpy(buf, root_fs()->cwd);
+	return len;
+}
 
 int sys_unlink(const char *pathname)
 {

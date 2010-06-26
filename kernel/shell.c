@@ -180,6 +180,18 @@ int exec(char *filename)
 
 }
 
+void pwd(void)
+{
+	char buf[512];
+	int ret;
+	
+	ret = sys_getcwd(buf, sizeof buf);
+	if (ret < 0)
+		printk("pwd error: %d\n", ret);
+	printk("%s\n", buf);
+}
+
+
 extern void cls(void);
 extern void reboot();
 extern void ls(char *);
@@ -259,6 +271,10 @@ void run_command(char *command, int argc, char **argv)
 			argv[1] = ".";
 		ls(argv[1]);
         }
+
+	else if ( is_command(command, "pwd") ) {
+		pwd();
+	}
 
         else if ( is_command(command, "version") )
                 version ();

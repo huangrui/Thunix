@@ -38,7 +38,7 @@ struct fs *fs_init(void)
 	fs->root = tfs_iget_root(fs);
 	fs->pwd = fs->root;
 
-	strcpy(fs->pwd_str, "/");
+	strcpy(fs->cwd, "/");
 	
 	/*
 	 * ZERO the fd table, since we currently do not support process, we just have
