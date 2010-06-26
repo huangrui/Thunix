@@ -114,8 +114,6 @@ void detect_floppy_drive()
         printk("\n");
 }
 
-
-
 extern unsigned long long * idt;
 extern unsigned long timer_ticks;
 extern unsigned long count_down;
@@ -147,7 +145,6 @@ void init(void)
 {
         char ok[] = "[OK]";
         unsigned long startup_time;
-	struct fs *fs;
         struct tm time;
         
         cli();
@@ -173,24 +170,8 @@ void init(void)
         floppy_init();
         printk("\t\t%s\n", ok);
 
-	printk("mounting tfs image as root fs...");
-	fs = fs_init();
-	printk("\t%s\n", ok);
+	fs_init();
 
-	printk("Cache system initialiaztion...");
-	cache_init(TFS_SBI(fs));
-	printk("\t\t%s\n", ok);
-
-	fs->root = tfs_iget_root(fs);
-	fs->pwd = fs->root;
-	
-	memset(fds, 0, 32);
-
-	printk("Cd into root... ");
-	this_dir = opendir("/");
-	if (IS_ERR(this_dir))
-		printk("cd into root dir failed(%d)!\n", PTR_ERR(this_dir));
-	printk("\t\t\t%s\n", ok);
 
 	
 

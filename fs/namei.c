@@ -121,6 +121,23 @@ int sys_rmdir(const char *pathname)
 	return err;
 }
 
+int sys_chdir(const char *pathname)
+{
+	struct inode * inode = namei(pathname, 0);
+	
+	if (IS_ERR_OR_NULL(inode))
+		return inode ? PTR_ERR(inode) : -ENOENT;
+	if (!IS_DIR(inode)) {
+		free_inode(inode);
+		return -ENOTDIR;
+	}
+
+	free_inode(root_fs()->pwd);
+	root_fs()->pwd = inode;
+	return 0;
+}
+	
+
 int sys_unlink(const char *pathname)
 {
 	struct inode *dir = namei_parent(pathname);

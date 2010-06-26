@@ -5,34 +5,13 @@
 #include <dirent.h>
 #include <err.h>
 
-void cd(char *dst_dir)
+void cd(const char *dst_dir)
 {
-	DIR *old = this_dir;
+	int err = sys_chdir(dst_dir);
 
-	if (*dst_dir) {
-		this_dir = opendir(dst_dir);
-		if (IS_ERR(this_dir)) {
-			/*
-			 * FIXME: add error code handler here
-			 */
-			printk("cd: %s: no such directory\n", dst_dir);
-			this_dir = old;
-			return;
-		}
-
-		if (this_dir->dd_dir->inode->i_mode != TFS_DIR) {
-			printk("cd: %s: is not a directory\n", dst_dir);
-			tfs_closedir(this_dir);
-			this_dir = old;
-		} else {
-			tfs_closedir(old);
-		}
-	}
-	
-	root_fs()->pwd = this_dir->dd_dir->inode;
-	TFS_DEBUG("CDed in '%s' with inode '%d'\n", dst_dir, this_dir->dd_dir->inode->i_ino);
+	if (err)
+		printk("chdir error: %d\n", err);
 }
-
 
 void cat(char *filename)
 {

@@ -97,7 +97,7 @@ extern struct tfs_sb_info *tfs_sbi;
 
 #define TFS_INODES_PER_BLOCK(sbi) (sbi->s_inodes_per_block)
 
-#define TFS_DEBUG printk
+#define TFS_DEBUG //printk
 
 #define roundup(x, y) ((x) / (y) + (((x) % (y)) ? 1 : 0))
 
@@ -113,7 +113,8 @@ extern int tfs_bread(struct tfs_sb_info *, uint32_t , void *);
 extern int tfs_bwrite(struct tfs_sb_info *, uint32_t, void *);
 
 /* super.c */
-struct tfs_sb_info * tfs_mount(void);
+int tfs_get_blk_shift(void *sb);
+void * tfs_mount(void);
 
 /* ialloc.c */
 int tfs_free_inode(struct tfs_sb_info *, int);

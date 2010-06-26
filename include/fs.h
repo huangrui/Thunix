@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#define FS_DEBUG printk
+#define FS_DEBUG //printk
 
 #define MAX_NAME_LEN 	255
 
@@ -18,17 +18,24 @@
 #define TFS_DIR		0x2
 #define IS_DIR(dir)	((dir)->i_mode == TFS_DIR)
 
+#define MAX_PWD_LEN  	255
+
 struct fs {
-	char fs_name[8];	
+	char *name;
 	void *sb;	/* The fs-specific information */
 	int sector_shift;
 	int block_shift;
 	
 	uint32_t offset; /* Disk offset as sectors */
 	
-	char *pwd_str;
+	char pwd_str[MAX_PWD_LEN];
 	struct inode *pwd;
 	struct inode *root;
+};
+
+struct fs_type {
+	void * (*mount)(void);
+	int    (*get_blk_shift)(void *);
 };
 
 #define SEEK_SET 0
@@ -119,6 +126,7 @@ struct inode *namei(const char *, uint32_t);
 struct inode *namei_parent(const char *);
 int sys_mkdir(const char *);
 int sys_rmdir(const char *);
+int sys_chdir(const char *);
 int sys_unlink(const char *);
 
 /* fslib.c */

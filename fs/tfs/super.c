@@ -4,8 +4,17 @@
 #include <tfs.h>
 #include <fd.h>
 
+/*
+ * It's a temp workround for getting the block size when mounting the root fs
+ *
+ * FIXME: we should remove this suck code
+ */
+int tfs_get_blk_shift(void *sb)
+{
+	return ((struct tfs_sb_info *)sb)->s_block_shift;
+}
 
-struct tfs_sb_info * tfs_mount(void)
+void * tfs_mount(void)
 {
 	struct tfs_sb_info *sbi;
 	struct tfs_super_block sb;
