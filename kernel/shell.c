@@ -22,7 +22,7 @@
 
 
 char buf[BUFFER_SIZE];
-static char *version_string = "v0.5";
+static char *version_string = "v0.6";
 
 
 static int atoi_hex(char *str)
