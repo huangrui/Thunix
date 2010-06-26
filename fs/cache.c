@@ -26,13 +26,13 @@ static int cache_entries = 0;
 /*
  * Initialize the cache data structres
  */
-void cache_init(struct tfs_sb_info *sbi)
+void cache_init(struct fs *fs)
 {
         struct cache_struct *prev, *cur;
         char *data = cache_data;
         int i;
         
-        cache_entries = CACHE_SIZE >> sbi->s_block_shift;
+        cache_entries = CACHE_SIZE >> fs->block_shift;
         if (cache_entries > MAX_CACHE_ENTRIES)
                 cache_entries = MAX_CACHE_ENTRIES;
         
@@ -46,7 +46,7 @@ void cache_init(struct tfs_sb_info *sbi)
                 cur->prev    = prev;
                 prev->next   = cur;
                 cur->data    = data;
-                data += sbi->s_block_size;
+                data += BLOCK_SIZE(fs);
                 prev = cur++;
         }
 }
@@ -58,7 +58,7 @@ void cache_init(struct tfs_sb_info *sbi)
  * otherwise load it and updata the relative cache
  * structre with data pointer.
  */
-struct cache_struct* get_cache_block(struct tfs_sb_info *sbi, uint32_t block)
+struct cache_struct* get_cache_block(struct fs *fs, uint32_t block)
 {
         struct cache_struct *head = &cache_head;
         struct cache_struct *last = head->prev;
@@ -87,7 +87,7 @@ struct cache_struct* get_cache_block(struct tfs_sb_info *sbi, uint32_t block)
         if (i == cache_entries) {        
                 /* store it at the head of real cache */
                 cs = head->next;        
-                if (tfs_bread(sbi, block, cs->data))
+                if (tfs_bread(fs->sb, block, cs->data))
 			return NULL;
                 cs->block = block;
 	}

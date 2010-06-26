@@ -26,7 +26,7 @@ int tfs_read(struct file *file, void *buf, int blocks)
 		block = tfs_bmap(file->inode, index++);
 		if (!block)
 			break;
-		cs = get_cache_block(sbi, block);
+		cs = get_cache_block(file->fs, block);
 		if (!cs)
 			return -EIO;
 		memcpy(buf, cs->data, sbi->s_block_size);
@@ -65,7 +65,7 @@ int tfs_write(struct file *file, void *buf, int blocks)
 			return -EFBIG;
 		}
 	}
-	cs = get_cache_block(sbi, block);
+	cs = get_cache_block(file->fs, block);
 	if (!cs)
 		return -EIO;
 	bytes_written = sbi->s_block_size - bufoff;
@@ -92,7 +92,7 @@ int tfs_write(struct file *file, void *buf, int blocks)
 			}
 		}
 		bytes_need = sbi->s_block_size;
-		cs = get_cache_block(sbi, block);
+		cs = get_cache_block(file->fs, block);
 		if (!cs)
 			return -EIO;
 		memcpy(cs->data, buf, bytes_need);

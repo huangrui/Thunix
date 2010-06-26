@@ -3,7 +3,7 @@ LD	= ld
 
 DIRNAME = fs
 
-OBJS    =  inode.o namei.o file.o super.o dir.o fslib.o 
+OBJS    =  inode.o namei.o file.o super.o dir.o fslib.o cache.o
 
 .PHONY: fs.o tfs/tfs.o
 

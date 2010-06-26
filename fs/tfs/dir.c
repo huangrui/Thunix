@@ -39,7 +39,7 @@ struct cache_struct * tfs_find_entry(struct inode *inode, const char *dname, str
         block = inode->i_data[index++];
 	if (!block)
                 return NULL;
-        cs = get_cache_block(sbi, block);
+        cs = get_cache_block(inode->i_fs, block);
 	if (!cs)
 		return ERR_PTR(-EIO);
         de = (struct tfs_dir_entry *)cs->data;
@@ -48,7 +48,7 @@ struct cache_struct * tfs_find_entry(struct inode *inode, const char *dname, str
 		if ((char *)de >= (char *)cs->data + sbi->s_block_size) {
 			if ((block = inode->i_data[index++]) < sbi->s_data_area)
                                 return NULL;
-                        cs = get_cache_block(sbi, block);
+                        cs = get_cache_block(inode->i_fs, block);
 			if (!cs)
 				return ERR_PTR(-EIO);
                         de = (struct tfs_dir_entry *)cs->data;
@@ -81,7 +81,7 @@ int tfs_add_entry(struct inode *dir, const char *name, int inr, int * dirty)
 
 	if (!(block = dir->i_data[index++]))
 		goto alloc_new_block;
-	cs = get_cache_block(sbi, block);
+	cs = get_cache_block(dir->i_fs, block);
 	if (!cs)
 		return -EIO;
 	de = (struct tfs_dir_entry *)cs->data;
@@ -89,7 +89,7 @@ int tfs_add_entry(struct inode *dir, const char *name, int inr, int * dirty)
 		if ((void *)de >= cs->data + sbi->s_block_size) {
 			if (!(block = dir->i_data[index++]))
 				break;
-			cs = get_cache_block(sbi, block);
+			cs = get_cache_block(dir->i_fs, block);
 			if (!cs)
 				return -EIO;
 			de = (struct tfs_dir_entry *)cs->data;
@@ -111,7 +111,7 @@ alloc_new_block:
 			return -EFBIG;
 
 		dir->i_data[index - 1] = block;
-		cs = get_cache_block(sbi, block);
+		cs = get_cache_block(dir->i_fs, block);
 		if (!cs)
 			return -EIO;
 		de = (struct tfs_dir_entry *)cs->data;
@@ -288,7 +288,7 @@ struct dirent * tfs_readdir(struct file *file)
 
         if (!(block = tfs_bmap(inode, index)))
                 return NULL;        
-        cs = get_cache_block(sbi, block);
+        cs = get_cache_block(file->fs, block);
         de = (struct tfs_dir_entry *)(cs->data + (file->offset & (sbi->s_block_size- 1)));
 
         if (!(dirent = malloc(sizeof(*dirent)))) {

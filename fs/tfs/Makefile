@@ -3,7 +3,7 @@ LD	= ld
 
 DIRNAME = fs/tfs
 
-OBJS    = balloc.o cache.o dir.o file.o ialloc.o inode.o super.o tfs_diskio.o tfs_cmd.o
+OBJS    = balloc.o dir.o file.o ialloc.o inode.o super.o tfs_diskio.o tfs_cmd.o
 
 all: tfs.o
 

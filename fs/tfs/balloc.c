@@ -5,13 +5,15 @@
 #include <tfs.h>
 #include <cache.h>
 #include <err.h>
+#include <kernel.h>
 
 /* 
  * cache the block bitmap data
  */
 static struct cache_struct * tfs_read_block_bitmap(struct tfs_sb_info *sbi)
 {
-	struct cache_struct *cs = get_cache_block(sbi, sbi->s_block_bitmap);
+	struct fs * fs = container_of((void *)sbi, struct fs, sb);
+	struct cache_struct *cs = get_cache_block(fs, sbi->s_block_bitmap);
 	
 	return cs;
 }

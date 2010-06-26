@@ -13,8 +13,8 @@ struct cache_struct {
 
 
 /* functions */
-void cache_init(struct tfs_sb_info *);
-struct cache_struct *get_cache_block(struct tfs_sb_info *, uint32_t);
+void cache_init(struct fs*);
+struct cache_struct *get_cache_block(struct fs *, uint32_t);
 void print_cache(void);
 
 

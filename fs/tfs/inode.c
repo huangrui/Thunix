@@ -96,13 +96,14 @@ static void tfs_fill_inode(struct inode *inode, struct tfs_inode *tinode)
 	memcpy(inode->i_data, tinode->i_block, TFS_N_BLOCKS * sizeof(uint32_t *));
 }
 
-static int tfs_read_inode(struct tfs_sb_info *sbi, struct tfs_inode *tinode, int inr)
+static int tfs_read_inode(struct fs *fs, struct tfs_inode *tinode, int inr)
 {
 	uint32_t inode_block;
 	struct cache_struct *cs;
+	struct tfs_sb_info *sbi = TFS_SBI(fs);
 	
 	inode_block = sbi->s_inode_table + (inr - 1) / TFS_INODES_PER_BLOCK(sbi);
-	cs = get_cache_block(sbi, inode_block);
+	cs = get_cache_block(fs, inode_block);
 	if (IS_ERR(cs))
 		return -EIO;
 
@@ -117,7 +118,7 @@ struct inode * tfs_iget_by_inr(struct fs *fs, int inr)
 	struct tfs_inode tinode;
 	int err;
 
-	err = tfs_read_inode(TFS_SBI(fs), &tinode, inr);
+	err = tfs_read_inode(fs, &tinode, inr);
 	if (err)
 		return ERR_PTR(err);
 
@@ -177,7 +178,7 @@ int tfs_iwrite(struct inode *inode)
 	int err = 0;
 
 	inode_block = sbi->s_inode_table + (inode->i_ino - 1) / TFS_INODES_PER_BLOCK(sbi);
-	cs = get_cache_block(sbi, inode_block);
+	cs = get_cache_block(inode->i_fs, inode_block);
 	if (!cs)
 		return -EIO;
 	tinode = (struct tfs_inode *)cs->data + ((inode->i_ino - 1) % TFS_INODES_PER_BLOCK(sbi));

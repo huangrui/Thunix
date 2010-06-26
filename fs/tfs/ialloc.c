@@ -5,6 +5,7 @@
 #include <tfs.h>
 #include <cache.h>
 #include <err.h>
+#include <kernel.h>
 
 /*
  * Cache the inode bitmap block
@@ -13,7 +14,8 @@
  */
 static inline struct cache_struct * tfs_read_inode_bitmap(struct tfs_sb_info *sbi)
 {
-	struct cache_struct *cs = get_cache_block(sbi, sbi->s_inode_bitmap);
+	struct fs * fs = container_of((void *)sbi, struct fs, sb);
+	struct cache_struct *cs = get_cache_block(fs, sbi->s_inode_bitmap);
 
 	return cs;
 }

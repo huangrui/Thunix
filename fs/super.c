@@ -33,7 +33,7 @@ struct fs *fs_init(void)
 	fs->sector_shift = 9;
 	current_root_fs = fs;
 
-	cache_init(fs->sb);
+	cache_init(fs);
 
 	fs->root = tfs_iget_root(fs);
 	fs->pwd = fs->root;
