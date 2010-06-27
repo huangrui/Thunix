@@ -5,7 +5,7 @@ LDFLAGS = -m elf_i386 -N
 DIRNAME = lib
 
 
-OBJS = string.o bitopts.o
+OBJS = string.o bitopts.o vsprintf.o
 
 .PHONY: all clean
 

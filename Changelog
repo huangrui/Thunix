@@ -1,4 +1,7 @@
 2010-06-27 Liu Aleaxander <Aleaxander@gmail.com>
+	* Implement user space's printf stuff
+
+2010-06-27 Liu Aleaxander <Aleaxander@gmail.com>
 	* Implement sys_execve sys call
 
 2010-06-26 Liu Aleaxander <Aleaxander@gmail.com>

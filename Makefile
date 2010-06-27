@@ -52,8 +52,6 @@ user-progs:
 	@printf "\n"
 	${MAKE} clean --directory=user
 	${MAKE} --directory=user
-	cp user/user-test ./
-	cp user/arg ./
 
 release: 
 	./release.sh

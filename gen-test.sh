@@ -36,7 +36,6 @@ cd ..
 cp_in gen-test.sh
 cp_in README
 cp_in user-test
-cp_in arg
 quit
 EOF
 

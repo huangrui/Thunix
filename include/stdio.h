@@ -9,8 +9,13 @@
 #endif
 
 extern int vsprintf (char *, const char *, va_list);
-extern int sprintk (char *, const char *, ...);
+#ifdef __USER
+extern int printf(const char *, ...);
+extern int sprintf (char *, const char *, ...);
+#else
 extern int printk(const char *, ...);
+extern int sprintk (char *, const char *, ...);
+#endif
 
 
 /* It's maybe not a good idea stay here */

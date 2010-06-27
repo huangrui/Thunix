@@ -7,7 +7,7 @@ CPP	=gcc -g -E -nostdinc -I../include
 DIRNAME = kernel
 
 OBJS    = asm.o sys.o console.o kb.o mktime.o panic.o printk.o \
-	 timer.o traps.o vsprintf.o fd.o shell.o reboot.o halt.o hexdump.o
+	 timer.o traps.o fd.o shell.o reboot.o halt.o hexdump.o
 #user_progs = user-test
 
 all: kernel.o ${user_progs}
@@ -53,5 +53,3 @@ ramdisk.s sched.s sched.o: sched.c ../include/sched.h ../include/head.h ../inclu
 timer.s timer.o: timer.c ../include/asm/io.h ../include/asm/system.h \
   ../include/timer.h ../include/types.h
 traps.s traps.o: traps.c ../include/asm/system.h ../include/asm/io.h
-vsprintf.s vsprintf.o: vsprintf.c ../include/stdarg.h ../include/string.h \
-  ../include/types.h
