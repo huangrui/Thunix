@@ -342,16 +342,12 @@ syscall_interrupt:
 	pushl %es
 	pushl %fs
 
-	pushl %eax
+	pushl %edx
+	pushl %ecx
+	pushl %ebx
+        call syscall_table(,%eax,4)
+        addl $12, %esp
 
-	movl scp, %eax
-	movl %edx, third(%eax)
-	movl %ecx, second(%eax)
-	movl %ebx, first(%eax)
-
-        call syscall
-        
-        addl $4,%esp                    # pop the nr number
 	pop %fs
 	pop %es
 	pop %ds
