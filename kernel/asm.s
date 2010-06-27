@@ -325,9 +325,7 @@ floppy_interrupt:
               
 	iret
 
-first  = 0x00
-second = 0x04
-third  = 0x08
+__NR_syscall = 0x03
 
 .globl syscall_interrupt
 syscall_interrupt:
@@ -341,13 +339,17 @@ syscall_interrupt:
 	pushl %ds
 	pushl %es
 	pushl %fs
+	
+	cmpl $__NR_syscall, %eax
+	ja   bad_syscall
 
 	pushl %edx
 	pushl %ecx
 	pushl %ebx
-        call syscall_table(,%eax,4)
+        call *syscall_table(,%eax,4)
         addl $12, %esp
 
+syscall_ret:
 	pop %fs
 	pop %es
 	pop %ds
@@ -360,3 +362,7 @@ syscall_interrupt:
 	popl %eax
               
 	iret
+
+bad_syscall:
+	movl $-38, %eax 	# ENOSYS
+	jmp syscall_ret

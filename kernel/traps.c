@@ -253,7 +253,5 @@ void trap_init(void)
 
 
 	/* Install system call handler */
-	extern void syscall_interrupt(void);
-	scp = malloc(sizeof(*scp));
         set_system_gate(0x80, &syscall_interrupt);
 }

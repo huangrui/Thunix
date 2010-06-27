@@ -2,8 +2,7 @@
 
 int main(void)
 {
-	struct sys_test st = {50, "Aleaxander"};
-	test3(512, "Hello thunix system call", &st);
+	test2(512, "Hello thunix system call");
 
 	return 0;
 }

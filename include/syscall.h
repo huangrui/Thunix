@@ -2,16 +2,6 @@
 #define SYSCALL_H
 
 extern void syscall_interrupt(void);
-extern int syscall(int);
-
-
-struct syscall_params {
-	unsigned long first;
-	unsigned long second;
-	unsigned long third;
-};
-
-extern struct syscall_params *scp;
 
 #define _syscall0(type,name) \
 type name(void) \
