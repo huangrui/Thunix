@@ -7,3 +7,8 @@ the first version released.
 
 == And the final 1.0 ==
 4. port some coreutils from GNU like cp, cat and so on into thunix.
+
+
+
+== Others that not sure for which version ==
+env

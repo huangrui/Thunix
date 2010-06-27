@@ -4,16 +4,22 @@ LDFLAGS = -m elf_i386 --oformat binary -N
 
 DIRNAME = user
 
+LIB = usys.o
 
-OBJS = user-test.o usys.o
+OBJS = user-test.o arg.o
 
 .PHONY: all clean
 
-all: user-test
+all: user-test arg
 
-user-test: clean ${OBJS}
+user-test: ${LIB} ${OBJS}
 	@printf '%8s   %s\n' 'LD' ${DIRNAME}/$@
-	${LD} ${LDFLAGS} -e main -Ttext 0x1600000 -o $@ ${OBJS}
+	${LD} ${LDFLAGS} -e main -Ttext 0x1600000 -o $@ user-test.o ${LIB}
+
+arg: ${LIB} ${OBJS}
+	@printf '%8s   %s\n' 'LD' ${DIRNAME}/$@
+	${LD} ${LDFLAGS} -e main -Ttext 0x1600000 -o $@ arg.o ${LIB}
+
 
 %.o: %.c
 	@printf '%8s   %s\n' 'CC' ${DIRNAME}/$@

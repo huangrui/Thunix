@@ -21,6 +21,8 @@ int sys_test1(void)
 
 int sys_test2(void)
 {
+	printk("The first arg: %d\n", (int)scp->first);
+	printk("The second arg: &%p\n", scp->second);
 	printk("Hello test with 2 arguments: %d\t %s\n", (int)scp->first, (char *)scp->second);
 	return 0;
 }

@@ -130,6 +130,9 @@ int sys_chdir(const char *);
 int sys_getcwd(char *, int);
 int sys_unlink(const char *);
 
+/* exec.c */
+int sys_execve(const char *, char **);
+
 /* fslib.c */
 const char *get_base_name(const char *);
 

@@ -18,6 +18,9 @@
 #include <hexdump.h>
 #include <unistd.h>
 
+/* For now it's enough */
+#define MAX_OPTION 10
+
 #define BUFFER_SIZE 512
 
 
@@ -151,36 +154,17 @@ static void date()
                );
 }
 
-int exec(char *filename)
+static int exec(const char *file, char **argv)
 {
-	int fd = sys_open(filename, 0);
+	int err =  sys_execve(file, argv);
+	if (err < 0)
+		printk("exec failed: %d\n", err);
 
-	/*
- 	 * The current exec plan is: load the binary file to 16M,
- 	 * then jump to this address.
- 	 *
- 	 * I will try to make a good global thunix memory allocation
- 	 * map when I get time.
- 	 */
-	char * exec_buf = (char *)0x1600000;
-	int bytes_read;
-	int (*entry)(void);
-
-	if (fd < 0) {
-		printk("open: open file %s error(%d)!\n", filename, fd);
-		return -1;
-	}
-
-	bytes_read = sys_read(fd, exec_buf, 512);
-	sys_close(fd);
-
-	entry = (int(*)(void))(exec_buf);
-
-	return entry();
-
+	return err;
 }
 
-void pwd(void)
+
+static void pwd(void)
 {
 	char buf[512];
 	int ret;
@@ -222,8 +206,10 @@ void run_command(char *command, int argc, char **argv)
 
         else if (is_command(command, "date") )
                 date();
-	else if (is_command(command, "exec") )
-		exec(argv[1]);
+	else if (is_command(command, "exec") ) {
+		argv++; /* get rid of the exec command */
+		exec(argv[0], argv);
+	}
 
         else if (is_command(command, "halt") )
                 halt();
@@ -307,14 +293,14 @@ void debug_command(char *command, int argc, char **argv)
         
 
 
-/* For now it's enough */
-#define MAX_OPTION 4
 void parse_command(char * command_buffer)
 {
         char *command;
         char *argv[MAX_OPTION] = {};
         char *p;
         int argc = 0; 
+
+	memset(argv, 0, sizeof(char *) * MAX_OPTION);
 
         command = command_buffer;
 
@@ -342,16 +328,11 @@ void parse_command(char * command_buffer)
 		p--;
                 
 	}
+	if (argc > MAX_OPTION)
+		printk("WARNING: too many options\n");
 
         run_command(command, argc, argv);
 }
-
-
-
-
-
-
-
 
 void shell_init()
 {
