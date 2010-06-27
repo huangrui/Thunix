@@ -1,3 +1,7 @@
+=== V0.7 released === (2010-06-28)
+	* a functional sys_execve system call implemented
+	* user space programs can use printf now
+
 === V0.6 released === (2010-06-26)
 	* VFS layer added
 	* sys_chdir added

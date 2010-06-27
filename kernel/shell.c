@@ -25,7 +25,7 @@
 
 
 char buf[BUFFER_SIZE];
-static char *version_string = "v0.6";
+static char *version_string = "v0.7";
 
 
 static int atoi_hex(char *str)
@@ -107,7 +107,7 @@ static void about()
         puts("\n");
         printk("\tthunix, a 32-bit operating system, made by Alexander.\n");
         printk("\tmostly written by c and little asm language.\n");
-        printk("\tthe lastest version is thunix-0.2\n");
+        printk("\tthe lastest version is thunix-%s\n", version_string);
         printk("\tthe website is http://www.osdever.cn\n");
         puts("\n");
         printk("\tas the ram_fs we used, that's to say our all data crated.\n");
