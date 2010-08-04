@@ -1,6 +1,6 @@
 #!/bin/bash
 
-TFS_DIR=${HOME}/project/fstk/fs/tfs
+[ -z $TFS_DIR ] && TFS_DIR=${HOME}/project/fstk/fs/tfs
 
 # make a 1.44M disk
 dd if=/dev/zero of=root.img bs=1024 count=1440 2>/tmp/dd-out
