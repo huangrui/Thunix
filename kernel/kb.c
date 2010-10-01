@@ -55,6 +55,23 @@ extern void con_write(char *, int);
 #define NO	0x0
 #define ESC	0x1b
 
+/*
+ *  key   make  break 
+ *  home  0x47  0xc7
+ *  up    0x48  0xc8
+ *  pgup  0x49  0xc9
+ *   -    0x4A  0xca
+ *  left  0x4B  0xcb
+ *  centr 0x4C  0xcc
+ *  right 0x4D  0xcd
+ *   +    0x4E  0xce
+ *  end   0x4F  0xcf
+ *  down  0x50  0xd0
+ *  pgdn  0x51  0xd1
+ *  ins   0x52  0xd2
+ *  del   0x53  0xd3
+ */
+
 static unsigned char normal_map[256] =
 {
         NO,   ESC,  '1',  '2',  '3',  '4',  '5',  '6',  // 0x00
@@ -110,7 +127,7 @@ static unsigned char shift_map[256] = {
 
 #define C(x) (x - '@')
 
-static unsigned char ctl_map[256] = {
+static unsigned char ctrl_map[256] = {
         NO,      NO,      NO,      NO,      NO,      NO,      NO,      NO,
         NO,      NO,      NO,      NO,      NO,      NO,      NO,      NO,
         C('Q'),  C('W'),  C('E'),  C('R'),  C('T'),  C('Y'),  C('U'),  C('I'),
@@ -151,24 +168,42 @@ static void revert_char(unsigned char *ch)
 /* printable char */
 static void pln(void) 
 {
-        unsigned char *map = normal_map;
+        unsigned char *map;
+	unsigned char *maps[] = {
+		shift_map, shift_map, /*Left, right */
+		ctrl_map,  ctrl_map,
+		NULL,	   NULL,      /* alt */
+	};
 	unsigned char key;
+	int xmode = mode & 0x3f;
         
         
 	/* It's a break scancode */
         if (scancode & 0x80)
                 return;
+	
+	/* Use the normal mode map */
+	if (xmode == 0) {
+		map = normal_map;
+	} else if (((xmode - 1) | xmode) == (2 * xmode - 1)) {
+		/* If just contains one mode(aka, just one bit) */
+		map = maps[xmode - 1];
+		if (!map)
+			return;
+	} else {
+		/* Several mode key pressed, do nothing */
+		return;
+	}
         
         key = *(map + scancode);
 	if (mode & (RSHIFT | LSHIFT)) {
 		KBD_PRINTK("\nSHIFT_MAP detected\n");
-		map = shift_map;
-        	key = *(map + scancode);
 		revert_char(&key);
 	}
 
 	if (leds & CAPS_LOCK) {
 		KBD_PRINTK("\nCAPS detected\n");
+		/* CTRL-x keys will be ignored! */
 		revert_char(&key);
 	}
 
@@ -189,6 +224,13 @@ static void pln(void)
                 return;
         }
 
+	/* Ctrl + C */
+	if (key == C('C')) {
+		char *out = "^C\n";
+		con_write(out, 3);
+		goto reset;
+	}
+
         command_buffer[index] = (char)key;
         index ++;
 
@@ -196,14 +238,13 @@ static void pln(void)
         con_write((char *)&key,1);
         
         if (key == '\n') {
-                                
                 if ( index == 0) 
-                        goto next;
+                        goto reset;
                 
                 parse_command (command_buffer);
+	reset:
                 memset(command_buffer, '\0', index);
                 index = 0;
-        next:
                 puts("thunix $ ");
         }
         
@@ -214,46 +255,44 @@ static void unp(void)
         /* Just do nothing */
 }
 
-/* 
- * left CTRL and left ALT are extend scancode, 
- * they are followed by a '0xe0' scancode.
- */
-static void ctl(void)
+
+static inline void set_clear_mode(int flag)
 {
-        unsigned char temp;
-        temp = LCTRL;
-        
-        if (e0 & E0)
-                temp <<= 1;
-        
-        mode |= temp;
-}
-
-static void alt(void)
-{
-        unsigned char temp;
-        temp = LALT;
-
-        if (e0 & E0)
-                temp <<= 1;
-        
-        mode |= temp;
-}
-
-static void shift(int key_break)
-{
-	int flag = ((scancode & 0x7f) == 0x2A) ? LSHIFT : RSHIFT;
-
-	if (key_break) {
-		KBD_PRINTK("About cleaning SHIFT, %x(before) ", mode);
+	if (scancode & 0x80) {
+		KBD_PRINTK("About cleaning flag %x(before) ", mode);
 		mode &= ~flag;
 		KBD_PRINTK("%x(after)\n", mode);
 	}
 	else {
-		KBD_PRINTK("About setting SHIFT, %x(before) ", mode);
+		KBD_PRINTK("About setting flag, %x(before) ", mode);
 		mode |= flag;
 		KBD_PRINTK("%x(after)\n", mode);
 	}
+}
+
+/* 
+ * left CTRL and left ALT are extend scancode, 
+ * they are followed by a '0xe0' scancode.
+ */
+static void ctrl(int got_e0)
+{
+	int flag = got_e0 ? RCTRL : LCTRL;
+
+	set_clear_mode(flag);
+}
+
+static void alt(int got_e0)
+{
+	int flag = got_e0 ? RALT : LALT;
+
+	set_clear_mode(flag);
+}
+
+static void shift(void)
+{
+	int flag = ((scancode & 0x7f) == 0x2A) ? LSHIFT : RSHIFT;
+
+	set_clear_mode(flag);
 }
 
 static void cur(void)
@@ -304,45 +343,6 @@ static void fun(void)
         /* Not implement */
 }
 
-/*
- *  key   make  break 
- *  home  0x47  0xc7
- *  up    0x48  0xc8
- *  pgup  0x49  0xc9
- *   -    0x4A  0xca
- *  left  0x4B  0xcb
- *  centr 0x4C  0xcc
- *  right 0x4D  0xcd
- *   +    0x4E  0xce
- *  end   0x4F  0xcf
- *  down  0x50  0xd0
- *  pgdn  0x51  0xd1
- *  ins   0x52  0xd2
- *  del   0x53  0xd3
- */
-
-void (*kfun_table[0x80])(void) = {
-        /*    0/8  1/9  2/a  3/b  4/c  5/d  6/e  7/f */
-        /*00*/unp, unp, pln, pln, pln, pln, pln, pln,
-        /*  */pln, pln, pln, pln, pln, pln, pln, pln,
-        /*10*/pln, pln, pln, pln, pln, pln, pln, pln,
-        /*  */pln, pln, pln, pln, pln, ctl, pln, pln,
-        /*20*/pln, pln, pln, pln, pln, pln, pln, pln,
-        /*  */pln, pln, unp, pln, pln, pln, pln, pln,
-        /*30*/pln, pln, pln, pln, pln, pln, unp, pln,
-        /*  */alt, pln, cap, fun, fun, fun, fun, fun,
-        /*40*/fun, fun, fun, fun, fun, unp, unp, pln,
-        /*  */pln, pln, pln, unp, pln, pln, pln, pln,
-        /*50*/pln, pln, pln, pln, unp, unp, unp, fun,
-        /*  */fun, unp, unp, unp, unp, unp, unp, unp,
-        /*60*/unp, unp, unp, unp, unp, unp, unp, unp,
-        /*  */unp, unp, unp, unp, unp, unp, unp, unp,
-        /*70*/unp, unp, unp, unp, unp, unp, unp, unp,
-        /*  */unp, unp, unp, unp, unp, unp, unp, unp,
-};
-
-
-
 /* looks like not works */
 void wait_for_keypress()
 {
@@ -357,26 +357,38 @@ void wait_for_keypress()
 void keyboard_interrupt(void) 
 {
 	int com = 0;
-	int key_break = 0;
+	static int got_e0 = 0;
+	
 	
 	scancode = inb(0x60);
-	if (scancode & 0x80)
-		key_break = 1;
+	if(scancode == 0xE0) {
+		got_e0 = 1;
+		goto end;
+	}
 
 
 	switch (scancode & 0x7f) {
 	case 0x36:
 	case 0x2A:
-		shift(key_break);
+		shift();
 		break;
 	case 0x3A:
 		cap();
+		break;
+	case 0x1D:
+		ctrl(got_e0);
+		got_e0 = 0;
+		break;
+	case 0x38:
+		alt(got_e0);
+		got_e0 = 0;
 		break;
 	default:
 		pln();
 		break;
 	}
 
+end:
 	outb((com=inb(0x61))|0x80, 0x61);   /* disable it */
 	outb(com&0x7f, 0x61);               /* enable it again */
 	outb(0x20, 0x20);                   /* EOI */
