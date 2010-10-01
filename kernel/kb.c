@@ -29,6 +29,14 @@
  *   God bless you. :)
  */
 
+
+/*
+ * As I said before, I now get the passion and time to fix this mess up!
+ * A re-write plan is undergoing, and hope this time it will work perfectly:)
+ *
+ * 		    Aleaxander, 2010, 10.1
+ */
+
 #include <asm/io.h>
 #include <asm/system.h>
 #include <keyboard.h>
@@ -36,21 +44,20 @@
 #include <string.h>
 
 static unsigned char scancode;
-//static unsigned char brkflag;
 static unsigned char mode = 0;
 static unsigned char e0   = 2;  /* num lock is opened by default */
-static unsigned char key;
 static unsigned char leds;
-//static unsigned char shift;
 
-static void kb_wait(void);
 extern void con_write(char *, int);
 
-#define   NO   0x0
+#define KBD_PRINTK //printk
+
+#define NO	0x0
+#define ESC	0x1b
 
 static unsigned char normal_map[256] =
 {
-        NO,   0x1B, '1',  '2',  '3',  '4',  '5',  '6',  // 0x00
+        NO,   ESC,  '1',  '2',  '3',  '4',  '5',  '6',  // 0x00
         '7',  '8',  '9',  '0',  '-',  '=',  '\b', '\t',
         'q',  'w',  'e',  'r',  't',  'y',  'u',  'i',  // 0x10
         'o',  'p',  '[',  ']',  '\n', NO,   'a',  's',
@@ -78,11 +85,11 @@ static unsigned char normal_map[256] =
 static unsigned char shift_map[256] = {
         NO,   033,  '!',  '@',  '#',  '$',  '%',  '^',  // 0x00
         '&',  '*',  '(',  ')',  '_',  '+',  '\b', '\t',
-        'Q',  'W',  'E',  'R',  'T',  'Y',  'U',  'I',  // 0x10
-        'O',  'P',  '{',  '}',  '\n', NO,   'A',  'S',
-        'D',  'F',  'G',  'H',  'J',  'K',  'L',  ':',  // 0x20
-        '"',  '~',  NO,   '|',  'Z',  'X',  'C',  'V',
-        'B',  'N',  'M',  '<',  '>',  '?',  NO,   '*',  // 0x30
+        'q',  'w',  'e',  'r',  't',  'y',  'u',  'i',  // 0x10
+        'o',  'p',  '{',  '}',  '\n', NO,   'a',  's',
+        'd',  'f',  'g',  'h',  'j',  'k',  'l',  ':',  // 0x20
+        '"',  '~',  NO,   '|',  'z',  'x',  'c',  'v',
+        'b',  'n',  'm',  '<',  '>',  '?',  NO,   '*',  // 0x30
         NO,   ' ',  NO,   NO,   NO,   NO,   NO,   NO,
         NO,   NO,   NO,   NO,   NO,   NO,   NO,   '7',  // 0x40
         '8',  '9',  '-',  '4',  '5',  '6',  '+',  '1',
@@ -109,7 +116,7 @@ static unsigned char ctl_map[256] = {
         C('Q'),  C('W'),  C('E'),  C('R'),  C('T'),  C('Y'),  C('U'),  C('I'),
         C('O'),  C('P'),  NO,      NO,      '\r',    NO,      C('A'),  C('S'),
         C('D'),  C('F'),  C('G'),  C('H'),  C('J'),  C('K'),  C('L'),  NO,
-        NO,      NO,      NO,      C('\\'), C('Z'),  C('X'),  C('C'),  C('V'),
+        NO,      ' ',     NO,      C('\\'), C('Z'),  C('X'),  C('C'),  C('V'),
         C('B'),  C('N'),  C('M'),  NO,      NO,      C('/'),  NO,      NO,
         [0x97] KEY_HOME,
         [0xB5] C('/'),    // KP_Div
@@ -129,33 +136,43 @@ extern void parse_command (char *);
 static int index = 0;
 char command_buffer[512] = {'\0',};
 
+/*
+ * Revert char: turn upper to lower, lower to upper
+ */
+static void revert_char(unsigned char *ch)
+{
+	if (*ch >= 'a' && *ch <= 'z')
+		*ch -= 0x20;
+	else if (*ch >= 'A' && *ch <= 'Z')
+		*ch += 0x20;
+}
+
 
 /* printable char */
 static void pln(void) 
 {
-        unsigned char *map;
+        unsigned char *map = normal_map;
+	unsigned char key;
         
         
+	/* It's a break scancode */
         if (scancode & 0x80)
                 return;
         
-        
-        if ((mode & (RSHIFT | LSHIFT)) || (leds & CAPS_LOCK))
-                map = shift_map;
-        else
-                map = normal_map;
         key = *(map + scancode);
-        
-        /* I have no meaning of the following code, so just ignore it */
-#if 0 
-        if (mode & (LCTRL | RCTRL | CAPS_STATE))
-                if (key >= 'a' && key <= '}')
-                        key -= 32;
-        if (mode & (LCTRL | RCTRL))
-                if (key >= 64 && key <= 64 + 26)
-                        key -= 32;
-#endif
-        
+	if (mode & (RSHIFT | LSHIFT)) {
+		KBD_PRINTK("\nSHIFT_MAP detected\n");
+		map = shift_map;
+        	key = *(map + scancode);
+		revert_char(&key);
+	}
+
+	if (leds & CAPS_LOCK) {
+		KBD_PRINTK("\nCAPS detected\n");
+		revert_char(&key);
+	}
+
+               
         /* shell part */
         
         if (key == '\n') {
@@ -197,6 +214,10 @@ static void unp(void)
         /* Just do nothing */
 }
 
+/* 
+ * left CTRL and left ALT are extend scancode, 
+ * they are followed by a '0xe0' scancode.
+ */
 static void ctl(void)
 {
         unsigned char temp;
@@ -219,24 +240,31 @@ static void alt(void)
         mode |= temp;
 }
 
-static void sft(void)
+static void shift(int key_break)
 {
-        mode |= LSHIFT;
-        if (scancode == 0x36)
-                mode |= LSHIFT * 2;
-}
+	int flag = ((scancode & 0x7f) == 0x2A) ? LSHIFT : RSHIFT;
 
-static void unshift(void)
-{
-        if (scancode == 0xAA)
-                mode &= ~LSHIFT;
-        else if (scancode == 0xB6)
-                mode &= ~RSHIFT;
+	if (key_break) {
+		KBD_PRINTK("About cleaning SHIFT, %x(before) ", mode);
+		mode &= ~flag;
+		KBD_PRINTK("%x(after)\n", mode);
+	}
+	else {
+		KBD_PRINTK("About setting SHIFT, %x(before) ", mode);
+		mode |= flag;
+		KBD_PRINTK("%x(after)\n", mode);
+	}
 }
 
 static void cur(void)
 {
         /*Not implemented yet*/
+}
+
+static void kb_wait(void)
+{
+        while (inb(0x64) & 0x02)
+                ;
 }
 
 static void set_leds(void)
@@ -261,15 +289,15 @@ static void num_lock(void)
 
 static void cap(void)
 {
+	if (scancode & 0x80)
+		return;
+
+	KBD_PRINTK("leds before: %x\n", leds);
         leds ^= CAPS_LOCK;
+	KBD_PRINTK("leds after: %x\n", leds);
         set_leds();
 }
 
-static void kb_wait(void)
-{
-        while (inb(0x64) & 0x02)
-                ;
-}
 
 static void fun(void)
 {
@@ -300,8 +328,8 @@ void (*kfun_table[0x80])(void) = {
         /*10*/pln, pln, pln, pln, pln, pln, pln, pln,
         /*  */pln, pln, pln, pln, pln, ctl, pln, pln,
         /*20*/pln, pln, pln, pln, pln, pln, pln, pln,
-        /*  */pln, pln, sft, pln, pln, pln, pln, pln,
-        /*30*/pln, pln, pln, pln, pln, pln, sft, pln,
+        /*  */pln, pln, unp, pln, pln, pln, pln, pln,
+        /*30*/pln, pln, pln, pln, pln, pln, unp, pln,
         /*  */alt, pln, cap, fun, fun, fun, fun, fun,
         /*40*/fun, fun, fun, fun, fun, unp, unp, pln,
         /*  */pln, pln, pln, unp, pln, pln, pln, pln,
@@ -326,65 +354,29 @@ void wait_for_keypress()
                 ;
 }
 
-void keyboard_interrupt () 
+void keyboard_interrupt(void) 
 {
-	int com;
-       
-
-	com = 0;
+	int com = 0;
+	int key_break = 0;
 	
 	scancode = inb(0x60);
-
-
-
-	if (scancode == 0xAA || scancode == 0xB6) {
-                unshift();
-                goto end;
-        }
-	
-        if (scancode == 0x2A || scancode == 0x36) {
-                sft();
-                goto end;
-        }
-        
-        if (scancode == 0x3A || scancode == 0xB6) {
-                cap();
-                goto end;
-        }
-
-        /* 
-         *   I don't know why i need hanle the left move here, 
-         * may just because i don't know why the origin handle
-         * can't work! what a sham day
-         *
-         *   And what make happy is that it works now! greate work.
-         */
-        if (scancode == 0x4b) {
-                scancode = LF;
-                con_write((char *)&scancode, 1);
-                goto end;
-        }
-                
-                
-        /* we haven't implenmented the ESC codes now */
-#if 0        
-        if (scancode == 0xe0) {
-                e0 = 1;
-                goto end;
-        }
-        /* we must reset the e0 later */
-        if (e0 == 1 && scancode & 0x80) {
-                e0 = 1;
-                goto end;
-        }
-#endif
 	if (scancode & 0x80)
-                goto end;
-	else
-	  (*kfun_table[scancode&0x7f])();
-        /* key stroke has been handled */
+		key_break = 1;
 
- end:
+
+	switch (scancode & 0x7f) {
+	case 0x36:
+	case 0x2A:
+		shift(key_break);
+		break;
+	case 0x3A:
+		cap();
+		break;
+	default:
+		pln();
+		break;
+	}
+
 	outb((com=inb(0x61))|0x80, 0x61);   /* disable it */
 	outb(com&0x7f, 0x61);               /* enable it again */
 	outb(0x20, 0x20);                   /* EOI */

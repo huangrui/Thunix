@@ -58,6 +58,10 @@ release:
 
 bochs:
 	bochs -qf bochsrc 
+
+qemu:
+	qemu -fda thunix.img -boot a
+
 clean:
 	@printf "%8s   *.o *~ boot.img kernle.img *.elf\n" "RM" 
 	rm -f bochsout.txt boot.img kernel.img *~ include/*~ *.elf *.map user-test
