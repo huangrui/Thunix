@@ -50,7 +50,13 @@ static unsigned char leds;
 
 extern void con_write(char *, int);
 
-#define KBD_PRINTK //printk
+//#define DEBUG_KBD 1
+#ifdef DEBUG_KBD
+	#define KBD_PRINTK(fmt, args...)  printk("KBD: "fmt, ##args)
+#else
+	#define KBD_PRINTK(fmt, args...)  
+#endif
+	
 
 #define NO	0x0
 #define ESC	0x1b
