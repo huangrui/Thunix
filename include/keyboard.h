@@ -50,6 +50,8 @@
 
 
 void keyboard_interrupt(void);			
+
+unsigned char get_key(void);
 		      
 
 

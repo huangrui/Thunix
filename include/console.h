@@ -12,8 +12,9 @@ void con_init(void);
 void con_write(char *buf, int nr);
 
 extern int puts(char *);
-extern char get_char();
-extern void command_read(char *);
+extern int putchar(int c);
+extern char getchar();
+extern void wait_key_press(void);
 
 
 #endif /* console.h */

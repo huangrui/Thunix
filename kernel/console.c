@@ -13,7 +13,7 @@
 #include <string.h>
 #include <asm/io.h>
 #include <asm/system.h>
-/*#include <keyboard.h>*/
+#include <keyboard.h>
 
 static unsigned long video_num_columns;
 static unsigned long video_size_row;
@@ -397,8 +397,23 @@ static void sysbeep(void)
 }
 
 
+void wait_key_press()
+{
+	/* Ignore the input, just wait a key press */
+	get_key();
+}
+
+char getchar(void)
+{
+	return get_key();
+}
 
 
+int putchar(int c)
+{
+	con_write((char *)&c, 1);
+	return 1;
+}
 
 
 /* 

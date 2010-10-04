@@ -17,12 +17,14 @@
 #include <tfs.h>
 #include <hexdump.h>
 #include <unistd.h>
+#include <keyboard.h>
 
 /* For now it's enough */
 #define MAX_OPTION 10
 
 #define BUFFER_SIZE 512
 
+#define CTRL(x) (x - '@')
 
 char buf[BUFFER_SIZE];
 static char *version_string = "v0.7";
@@ -120,7 +122,7 @@ static void about()
 static void help()
 {
         puts("\n");
-        printk("%s%s%s%s%s%s%s%s%s%s%s%s%s","thunix, version 0.2\n",      \
+        printk("%s%s%s%s%s%s%s%s%s%s%s%s%s","thunix, version %s\n",      \
                "\n",                                                    \
                "about		something about thunix\n",              \
                "clear           clear the screen\n",                    \
@@ -132,8 +134,8 @@ static void help()
                "halt            shut down the computer\n",              \
                "hello		a test command, just print 'hello thunix'\n", \
                "reboot          reboot the computer\n",                 \
-               "version         print the current version\n"            \
-               );
+               "version         print the current version\n",           \
+		version_string);
         puts("\n");
 }
 
@@ -214,10 +216,13 @@ void run_command(char *command, int argc, char **argv)
         else if (is_command(command, "halt") )
                 halt();
 
-        else if ( is_command(command, "hello") )
+        else if ( is_command(command, "hello") ) {
                 printk("hello thunix\n");
+		printk("Press any key to continue...");
+		wait_key_press();
+		printk("\n");
 
-        else if ( is_command(command, "help") )
+        } else if ( is_command(command, "help") )
                 help();
 
 	else if ( is_command(command, "hexdump") ) {
@@ -332,8 +337,60 @@ void parse_command(char * command_buffer)
         run_command(command, argc, argv);
 }
 
+static int index = 0;
+static char command_buffer[512] = {'\0',};
+
+static void enter_command(void)
+{
+	unsigned char key;
+
+	key = get_key();
+        if (key == '\n') {
+                command_buffer[index] = '\0';
+                goto skip;
+        } 
+        
+        if (key == '\b') {
+                if (index) {
+                        index --;
+                        goto skip;
+                }
+                
+                return;
+        }
+
+	/* Ctrl + C */
+	if (key == CTRL('C')) {
+		puts("^C\n");
+		goto reset;
+	}
+
+        command_buffer[index] = (char)key;
+        index ++;
+
+skip:
+	putchar(key);
+        
+        if (key == '\n') {
+                if ( index == 0) 
+                        goto reset;
+                
+                parse_command (command_buffer);
+	reset:
+                memset(command_buffer, '\0', index);
+                index = 0;
+                puts("thunix $ ");
+        }
+}
+        
+
+
 void shell_init()
 {
         puts("thunix $ ");
-
+	/*
+	 * Should never end, except halt or reboot command typed
+	 */
+	while (1)
+		enter_command();
 }

@@ -42,6 +42,7 @@
 #include <keyboard.h>
 #include <console.h>
 #include <string.h>
+#include <timer.h>
 
 static unsigned char scancode;
 static unsigned char mode = 0;
@@ -155,9 +156,11 @@ static unsigned char ctrl_map[256] = {
 };
 
 
-extern void parse_command (char *);
-static int index = 0;
-char command_buffer[512] = {'\0',};
+
+#define KBD_BUF_SIZE	1024
+static unsigned char kbd_ring_buffer[KBD_BUF_SIZE];
+static int ri = 0;
+static int wi = 0;
 
 /*
  * Revert char: turn upper to lower, lower to upper
@@ -202,59 +205,49 @@ static void pln(void)
 	}
         
         key = *(map + scancode);
+	KBD_PRINTK("raw key: 0x%x ", key);
 	if (mode & (RSHIFT | LSHIFT)) {
-		KBD_PRINTK("\nSHIFT_MAP detected\n");
+		KBD_PRINTK(" (SHIFT_MAP) ");
 		revert_char(&key);
 	}
 
 	if (leds & CAPS_LOCK) {
-		KBD_PRINTK("\nCAPS detected\n");
+		KBD_PRINTK(" (CAPS) ");
 		/* CTRL-x keys will be ignored! */
 		revert_char(&key);
 	}
+	KBD_PRINTK("| final key: 0x%x\n", key);
 
-               
-        /* shell part */
-        
-        if (key == '\n') {
-                command_buffer[index] = '\0';
-                goto skip;
-        } 
-        
-        if (key == '\b') {
-                if (index) {
-                        index --;
-                        goto skip;
-                }
-                
-                return;
-        }
-
-	/* Ctrl + C */
-	if (key == C('C')) {
-		char *out = "^C\n";
-		con_write(out, 3);
-		goto reset;
-	}
-
-        command_buffer[index] = (char)key;
-        index ++;
-
- skip:
-        con_write((char *)&key,1);
-        
-        if (key == '\n') {
-                if ( index == 0) 
-                        goto reset;
-                
-                parse_command (command_buffer);
-	reset:
-                memset(command_buffer, '\0', index);
-                index = 0;
-                puts("thunix $ ");
-        }
-        
+	kbd_ring_buffer[wi] = key;
+	wi = (wi + 1) % KBD_BUF_SIZE;
+	return;
 }
+
+static int key_left = 0;
+
+static void do_get_key(void)
+{
+	ri = wi;
+	while (ri == wi)
+		;
+	
+	/* Bochs need some delay, and seems that even 100 ms still not enough */
+	sleep(10);
+	
+	key_left = wi - ri;
+}
+
+unsigned char get_key(void)
+{
+	while (1) {
+		if (key_left--)
+			return kbd_ring_buffer[ri++];
+
+		/* No key left, do get more keys */
+		do_get_key();
+	}
+}
+
 
 static void unp(void)
 {
@@ -347,17 +340,6 @@ static void cap(void)
 static void fun(void)
 {
         /* Not implement */
-}
-
-/* looks like not works */
-void wait_for_keypress()
-{
-        char code;
-
-        code = inb(0x60);
-
-        while ( (code == '\0') || (code & 0x80) )
-                ;
 }
 
 void keyboard_interrupt(void) 
