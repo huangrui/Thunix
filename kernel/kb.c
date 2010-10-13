@@ -225,6 +225,9 @@ static void pln(void)
 
 static int key_left = 0;
 
+#define RECORD_ALL 0
+
+#if RECORD_ALL == 0
 static void do_get_key(void)
 {
 	ri = wi;
@@ -247,6 +250,19 @@ unsigned char get_key(void)
 		do_get_key();
 	}
 }
+#else
+unsigned char get_key(void)
+{
+	unsigned char key;
+
+	while (ri >= wi)
+		; /* Wait for press */
+	key = kbd_ring_buffer[ri];
+	ri = (ri + 1) % KBD_BUF_SIZE;
+
+	return key;
+}
+#endif
 
 
 static void unp(void)
