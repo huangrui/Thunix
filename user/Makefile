@@ -1,4 +1,4 @@
-CC	= gcc -g -nostdinc -I../include -Wall -Wno-unused -fno-builtin
+CC	= gcc -m32 -g -nostdinc -I../include -Wall -Wno-unused -fno-builtin
 LD	= ld
 LDFLAGS = -m elf_i386 -N --oformat binary 
 

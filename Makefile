@@ -1,4 +1,4 @@
-LD	= ld
+LD	= ld -m elf_i386
 OBJCOPY = objcopy
 LDFLAGS = -N
 MAKEFLAGS +=  --no-print-directory

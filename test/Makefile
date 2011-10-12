@@ -1,5 +1,5 @@
-AS	= as 
-LD	= ld
+AS	= as --32
+LD	= ld -m elf_i386
 LDFLAGS = --oformat binary -N
 
 all: boot.img

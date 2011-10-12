@@ -1,4 +1,4 @@
-AS	= as -I../include
+AS	= as --32 -I../include
 OBJS	 = bootsect.o head.o
 
 DIRNAME = boot

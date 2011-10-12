@@ -1,5 +1,5 @@
-CC	= gcc -g -nostdinc -I../include -Wall -Wno-unused
-LD	= ld
+CC	= gcc -m32 -g -nostdinc -I../include -Wall -Wno-unused
+LD	= ld -m elf_i386
 LDFLAGS = -m elf_i386 -N
 
 DIRNAME = lib

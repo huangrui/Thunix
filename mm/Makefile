@@ -1,6 +1,6 @@
-AS	= as -I../include
-CC	= gcc -g -nostdinc -I../include -Wall -Wno-unused
-LD	= ld
+AS	= as --32 -I../include
+CC	= gcc -m32 -g -nostdinc -I../include -Wall -Wno-unused
+LD	= ld -m elf_i386
 LDFLAGS = --oformat binary -N
 CPP	=gcc -g -E -nostdinc -I../include
 
